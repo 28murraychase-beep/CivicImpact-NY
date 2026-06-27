@@ -1,0 +1,2 @@
+# civicimpact-simulator
+A nonpartisan policy impact simulator estimating fiscal, economic, and political tradeoffs across 15 major U.S. policy areas.
