@@ -1,2 +1,2 @@
-# civicimpact-simulator
+# NYS Civic Impact Simulator
 A nonpartisan policy impact simulator estimating fiscal, economic, and political tradeoffs across 15 major U.S. policy areas.
