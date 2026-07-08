@@ -1,0 +1,2320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicImpact — Run the numbers before you run the argument</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF2FF; --paper-raised:#FFFFFF; --ink:#0D1B4B; --ink-soft:#4A5A7A;
+    --hairline:#D0D9EF; --brass:#2563EB; --brass-light:#BFDBFE; --brick:#DC2626;
+    --brick-bg:#FEE2E2; --forest:#16A34A; --forest-bg:#DCFCE7; --slate:#3B5BDB;
+    --slate-bg:#EFF6FF; --radius:6px; --shadow:0 2px 8px rgba(13,27,75,0.10);
+    --shadow-md:0 4px 20px rgba(13,27,75,0.14); --navy:#0D1B4B; --blue-bright:#2563EB;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 28px;}
+  .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--brass); font-weight:700;}
+  h1,h2,h3{font-family:'IBM Plex Sans', sans-serif; margin:0; color:var(--ink); font-weight:700;}
+  a{color:var(--brass); text-decoration:none; border-bottom:1px solid var(--brass-light);}
+  a:hover{border-bottom-color:var(--brass);}
+
+  header{padding:48px 0 0;}
+  .hero-title{font-size:clamp(40px, 6vw, 68px); line-height:1.0; letter-spacing:-0.02em; font-weight:800; color:#0D1B4B;}
+  .hero-sub{font-size:18px; color:var(--ink-soft); max-width:620px; margin-top:14px; line-height:1.5; font-weight:400;}
+  .hero-meta{display:flex; gap:22px; margin-top:22px; flex-wrap:wrap;}
+  .hero-meta div{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft);}
+  .hero-meta b{color:var(--ink); display:block; font-size:13px; margin-bottom:2px;}
+
+  /* ---------- TABS ---------- */
+  .tabbar{display:flex; gap:6px; margin-top:38px; border-bottom:2px solid var(--hairline); overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .tabbar::-webkit-scrollbar{height:4px;}
+  .tabbtn{flex-shrink:0;}
+  .tabbtn{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:.04em; text-transform:uppercase;
+    padding:11px 18px; background:none; border:none; cursor:pointer; color:var(--ink-soft);
+    border-bottom:3px solid transparent; margin-bottom:-2px; font-weight:700;
+  }
+  .tabbtn.active{color:#2563EB; border-bottom-color:#2563EB;}
+  .tabpanel{display:none;}
+  .tabpanel.active{display:block;}
+
+  /* ---------- CONTROL DECK ---------- */
+  .deck{margin-top:28px; background:var(--paper-raised); border:none; border-radius:10px; padding:24px 26px; display:grid; gap:20px; box-shadow:0 2px 8px rgba(13,27,75,0.10); grid-template-columns:1.4fr 1fr 1fr; align-items:end;}
+  @media (max-width:760px){ .deck{grid-template-columns:1fr;} }
+  .deck.cols-2{grid-template-columns:1fr 1fr;}
+  .deck.cols-1{grid-template-columns:1fr;}
+  .field label{display:block; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px;}
+  .field .help{font-size:11.5px; color:var(--ink-soft); margin-top:5px; line-height:1.4;}
+  select, input[type=text], input[type=number]{
+    width:100%; padding:11px 12px; font-family:'IBM Plex Sans',sans-serif; font-size:15px;
+    border:1px solid var(--hairline); background:#fff; color:var(--ink); border-radius:var(--radius);
+  }
+  select{appearance:none; cursor:pointer;}
+  select:focus, input:focus{outline:2px solid var(--brass); outline-offset:1px;}
+  .slider-row{display:flex; align-items:center; gap:12px;}
+  input[type=range]{flex:1; accent-color:var(--brass); cursor:pointer;}
+  .slider-val{font-family:'IBM Plex Mono', monospace; font-size:13px; min-width:84px; text-align:right; color:var(--ink);}
+
+  /* ---------- BUILDER ---------- */
+  .builder-section{margin-top:18px;}
+  .builder-section .section-label{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--brass); margin:28px 0 12px; display:flex; align-items:center; gap:10px;
+  }
+  .builder-section .section-label::after{content:""; flex:1; height:1px; background:var(--hairline);}
+  .mech-desc{font-size:13px; color:var(--ink-soft); margin-top:8px; line-height:1.5; max-width:640px;}
+  .field-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:18px 22px; margin-top:16px;}
+  @media (max-width:760px){ .field-grid{grid-template-columns:1fr;} }
+  .example-bar{display:flex; gap:10px; align-items:center; margin-top:6px; flex-wrap:wrap;}
+  .example-bar select{max-width:380px;}
+  .preset-btn{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; padding:9px 14px; border-radius:20px;
+    border:1px solid var(--hairline); background:#fff; color:var(--ink-soft); cursor:pointer;
+  }
+  .preset-btn:hover{border-color:var(--brass); color:var(--brass);}
+
+  /* ---------- LEDGER ---------- */
+  .ledger-shell{margin-top:34px;}
+  .ledger{border:none; border-radius:10px; background:var(--paper-raised); overflow:hidden; box-shadow:0 4px 20px rgba(13,27,75,0.12);}
+  .ledger-head{padding:20px 26px 16px; border-bottom:1px solid var(--hairline); display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px; background:linear-gradient(135deg, #0D1B4B 0%, #1A3FBB 100%);}
+  .ledger-head h2{font-size:23px; max-width:680px; color:#fff;}
+  .ledger-head .area-tag{font-family:'IBM Plex Mono', monospace; font-size:11px; color:rgba(255,255,255,0.7); letter-spacing:.05em; text-align:right;}
+  .funding-note{padding:14px 26px; background:#EFF6FF; border-bottom:1px solid var(--hairline); font-size:13px; color:var(--ink-soft); line-height:1.5;}
+  .funding-note b{color:var(--ink); font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:4px;}
+  .ledger-grid{display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:1px solid var(--hairline);}
+  @media (max-width:760px){ .ledger-grid{grid-template-columns:1fr;} }
+  .ledger-cell{padding:20px 26px; border-right:1px solid var(--hairline);}
+  .ledger-cell:last-child{border-right:none;}
+  @media (max-width:760px){ .ledger-cell{border-right:none; border-bottom:1px solid var(--hairline);} }
+  .ledger-cell .lbl{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin-bottom:8px;}
+  .ledger-cell .num{font-family:'IBM Plex Mono', monospace; font-size:27px; font-weight:600; line-height:1;}
+  .ledger-cell .num.cost{color:var(--brick);}
+  .ledger-cell .num.rev{color:var(--forest);}
+  .ledger-cell .footnote{font-size:12.5px; color:var(--ink-soft); margin-top:8px; line-height:1.4;}
+  .stat-strip{display:grid; grid-template-columns:repeat(3, 1fr); gap:0; border-bottom:1px solid var(--hairline);}
+  @media (max-width:760px){ .stat-strip{grid-template-columns:1fr;} }
+  .stat{padding:18px 26px; border-right:1px solid var(--hairline); background:var(--paper-raised);}
+  .stat:last-child{border-right:none;}
+  @media (max-width:760px){ .stat{border-right:none; border-bottom:1px solid var(--hairline);} }
+  .stat .lbl{font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-soft);}
+  .stat .val{font-family:'IBM Plex Mono', monospace; font-size:17px; margin-top:5px; font-weight:600;}
+
+  .beam-wrap{padding:26px;}
+  .beam-wrap .lbl{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin-bottom:18px;}
+  .beam-track{position:relative; height:6px; background:var(--hairline); border-radius:3px; margin:30px 8px 14px; background:linear-gradient(90deg,#BFDBFE,#0D1B4B);}
+  .beam-fulcrum{position:absolute; left:50%; top:6px; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-top:10px solid var(--ink); transform:translateX(-50%);}
+  .beam-tick{position:absolute; top:-13px; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; color:#fff; transform:translateX(-50%); border:2px solid var(--paper-raised); transition:left .35s ease;}
+  .beam-legend{display:flex; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft); margin-top:4px;}
+  .badge{display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:11px; padding:4px 10px; border-radius:20px; font-weight:600; letter-spacing:.03em;}
+  .badge.low{background:#DCFCE7; color:#15803D; font-weight:700;}
+  .badge.moderate{background:#FEF9C3; color:#854D0E; font-weight:700;}
+  .badge.high{background:#FEE2E2; color:#DC2626; font-weight:700;}
+
+  .partisan-shell{padding:0 26px 26px;}
+  .partisan-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:6px;}
+  @media (max-width:760px){ .partisan-grid{grid-template-columns:1fr;} }
+  .pcard{border:1px solid var(--hairline); border-radius:var(--radius); padding:16px 18px; background:#fff;}
+  .pcard h4{font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--hairline);}
+  .pcard.prog h4{color:#1A3FBB;} .pcard.cons h4{color:var(--brick);} .pcard.lib h4{color:#2563EB;}
+  .pcard p{font-size:13.5px; line-height:1.5; margin:0 0 10px; color:var(--ink-soft);}
+  .pcard p b{color:var(--ink); font-weight:600; font-family:'IBM Plex Sans',sans-serif; display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px;}
+  .moderate-row{margin-top:16px; padding:16px 18px; background:#EFF6FF; border-radius:var(--radius); border-left:3px solid #2563EB; font-size:14px; line-height:1.55;}
+  .moderate-row b{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:6px; color:#1A3FBB;}
+  .groups-row{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:14px;}
+  @media (max-width:760px){ .groups-row{grid-template-columns:1fr;} }
+  .groups-row div{font-size:13px; color:var(--ink-soft); line-height:1.5;}
+  .groups-row b{display:block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink); margin-bottom:4px;}
+
+  .method{margin:60px 0 30px; border-top:2px solid var(--hairline); padding-top:30px;}
+  .method h3{font-size:20px; margin-bottom:12px;}
+  .method p{font-size:14.5px; color:var(--ink-soft); line-height:1.65; max-width:720px;}
+  .source-list{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+  .source-list span{font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft); border:1px solid var(--hairline); padding:4px 9px; border-radius:20px; background:var(--paper-raised);}
+  footer{padding:30px 0 60px; color:var(--ink-soft); font-size:13px; border-top:2px solid var(--hairline); margin-top:10px;}
+  .disclaimer{font-size:12.5px; color:var(--ink-soft); background:#EFF6FF; border-radius:var(--radius); padding:14px 18px; margin-top:14px; line-height:1.55;}
+  .extra-panel{padding:22px 26px; border-top:1px solid var(--hairline); background:#fff;}
+  .extra-panel h3{font-size:13px; font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:.06em; color:#1A3FBB; margin-bottom:14px; font-weight:700;}
+  .extra-rows{display:grid; grid-template-columns:1fr 1fr; gap:10px 24px;}
+  @media (max-width:600px){ .extra-rows{grid-template-columns:1fr;} }
+  .extra-row{display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-bottom:1px dashed var(--hairline); font-size:13.5px;}
+  .extra-row .erl{color:var(--ink-soft);}
+  .extra-row .erv{font-family:'IBM Plex Mono', monospace; font-weight:600; text-align:right;}
+  .county-banner{display:flex; gap:24px; flex-wrap:wrap; padding:18px 26px; background:#EFF6FF; border-bottom:1px solid var(--hairline); font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft);}
+  .county-banner b{color:#fff; display:block; font-size:14px; margin-bottom:2px; font-family:'IBM Plex Sans',sans-serif;}
+  .src-group{margin-top:34px;}
+  .src-group h3{font-size:18px; margin-bottom:6px;}
+  .src-group .src-desc{font-size:13.5px; color:var(--ink-soft); margin-bottom:16px; max-width:680px; line-height:1.5;}
+  .src-list{border:none; border-radius:10px; background:var(--paper-raised); overflow:hidden; box-shadow:0 4px 20px rgba(13,27,75,0.12);}
+  .src-item{padding:14px 20px; border-bottom:1px solid var(--hairline); display:grid; grid-template-columns:1fr 2fr; gap:18px; align-items:baseline;}
+  .src-item:last-child{border-bottom:none;}
+  @media (max-width:700px){ .src-item{grid-template-columns:1fr;} }
+  .src-item .src-name{font-weight:600; font-size:14px;}
+  .src-item .src-name a{font-weight:600;}
+  .src-item .src-used{font-size:12.5px; color:var(--ink-soft); line-height:1.45;}
+  .src-item .src-used b{color:var(--ink); font-family:'IBM Plex Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:2px;}
+  .src-count{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--brass); margin-bottom:4px;}
+  .ny-banner{margin-top:24px; border-radius:10px; overflow:hidden; box-shadow:var(--shadow-md); line-height:0;}
+  .photo-panel{display:flex; height:220px;}
+  .photo-cell{
+    flex:1; background-size:cover; background-position:center;
+    overflow:hidden;
+  }
+  .photo-cell+.photo-cell{border-left:3px solid #fff;}
+  @media (max-width:600px){
+    .photo-panel{height:130px;}
+  }
+  .header-top{display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:14px;}
+  .header-meta-right{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .ghbtn{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:600; letter-spacing:.03em;
+    border:1px solid var(--hairline); padding:6px 12px; border-radius:20px;
+    color:var(--ink); background:var(--paper-raised);
+  }
+  .ghbtn:hover{background:#0D1B4B; color:#fff; border-color:#0D1B4B;}
+  .version-tag{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-soft);}
+  .version-tag b{color:var(--ink);}
+  .changelog-link{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--brass); background:none; border:none;
+    border-bottom:1px solid var(--brass-light); cursor:pointer; padding:0; margin-left:8px;
+  }
+  .changelog-panel{
+    display:none; margin-top:16px; background:var(--paper-raised); border:1px solid var(--hairline);
+    border-radius:var(--radius); padding:18px 22px;
+  }
+  .changelog-panel.open{display:block;}
+  .changelog-panel h3{font-size:14px; font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:.06em; color:var(--brass); margin-bottom:10px;}
+  .cl-entry{font-size:13px; color:var(--ink-soft); line-height:1.55; padding:7px 0; border-bottom:1px dashed var(--hairline);}
+  .cl-entry:last-child{border-bottom:none;}
+  .cl-entry b{color:var(--ink); font-family:'IBM Plex Mono', monospace; font-size:12px;}
+  .tagline{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.04em; color:var(--brass); margin-top:8px;}
+  .interpret-note{
+    margin-top:28px; font-size:13px; color:var(--ink-soft); line-height:1.55; background:#EFF6FF;
+    border-radius:var(--radius); padding:13px 18px; max-width:820px;
+  }
+  .interpret-note b{color:var(--ink); font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;}
+  .roadmap-section{margin:50px 0 0; border-top:1px solid var(--hairline); padding-top:30px;}
+  .roadmap-section h3{font-size:20px; margin-bottom:8px;}
+  .roadmap-intro{font-size:13.5px; color:var(--ink-soft); margin-bottom:14px;}
+  .roadmap-list{list-style:none; margin:0; padding:0; max-width:600px;}
+  .roadmap-list li{
+    font-size:14px; padding:9px 0 9px 30px; border-bottom:1px solid var(--hairline);
+    position:relative; color:var(--ink-soft);
+  }
+  .roadmap-list li::before{content:"☐"; position:absolute; left:0; top:9px; color:var(--ink-soft); font-size:15px;}
+  .roadmap-list li.done{color:#0D1B4B; font-weight:600;}
+  .roadmap-list li.done::before{content:"☑"; color:#16A34A;}
+
+  .about-creator{margin:50px 0 0; border-top:1px solid var(--hairline); padding-top:30px;}
+  .about-creator h3{font-size:22px; margin-bottom:12px; color:#0D1B4B;}
+  .about-creator p{font-size:14.5px; color:var(--ink-soft); line-height:1.65; max-width:700px; margin:0 0 12px;}
+  .about-creator b{color:var(--ink);}
+  .creator-links{display:flex; gap:12px; margin-top:16px;}
+  .icon-badge{
+    display:flex; align-items:center; justify-content:center; width:44px; height:44px;
+    border:1px solid var(--hairline); border-radius:50%; background:#fff; border-bottom:1px solid var(--hairline);
+    transition:transform .15s ease, border-color .15s ease;
+  }
+  .icon-badge:hover{border-color:#2563EB; transform:translateY(-2px);}
+
+  .feedback-section{margin:50px 0 0; border-top:1px solid var(--hairline); padding:30px 0; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+  .feedback-section h3{font-size:15px; font-weight:500; color:var(--ink-soft); max-width:560px; font-family:'IBM Plex Sans',sans-serif;}
+  .feedback-btn{
+    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; padding:11px 22px;
+    background:#2563EB; color:#fff; border-radius:8px; border-bottom:none; white-space:nowrap; font-weight:700;
+  }
+  .feedback-btn:hover{background:#0D1B4B;}
+  .info-details{display:inline-block; margin-left:4px; vertical-align:middle;}
+  .info-icon{
+    list-style:none; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+    width:15px; height:15px; border-radius:50%; background:#EFF6FF; color:var(--slate);
+    font-size:10px; font-family:'IBM Plex Mono', monospace; line-height:1;
+  }
+  .info-icon::-webkit-details-marker{display:none;}
+  .info-icon:hover{background:var(--brass-light); color:var(--brass);}
+  .info-text{
+    font-size:12px; color:var(--ink-soft); font-weight:400; font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.5; margin:8px 0 0; padding:10px 12px; background:#EFF6FF; border-radius:var(--radius);
+    max-width:520px; text-transform:none; letter-spacing:normal;
+  }
+  .lbl{position:relative;}
+  .conf-details{margin-top:10px;}
+  .conf-details summary{list-style:none; cursor:pointer;}
+  .conf-details summary::-webkit-details-marker{display:none;}
+  .conf-badge{
+    display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px;
+    font-weight:600; padding:3px 9px; border-radius:12px; letter-spacing:.02em;
+  }
+  .conf-badge::after{content:" ▸"; opacity:.6;}
+  .conf-details[open] .conf-badge::after{content:" ▾";}
+  .conf-badge.conf-high{background:var(--forest-bg); color:var(--forest);}
+  .conf-badge.conf-medium{background:#FBF1DC; color:var(--brass);}
+  .conf-badge.conf-low{background:var(--brick-bg); color:var(--brick);}
+  .conf-reason{font-size:11.5px; color:var(--ink-soft); margin:6px 0 0; line-height:1.4;}
+  .source-tags{padding:0 26px 14px; display:flex; gap:6px; flex-wrap:wrap;}
+  .source-tag{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; padding:3px 10px; border-radius:14px;
+    border:1px solid var(--hairline); color:var(--ink-soft); background:#fff;
+  }
+  .source-tag:hover{border-color:var(--brass); color:var(--brass);}
+  .assumption-details summary{cursor:pointer; list-style:none;}
+  .assumption-details summary::-webkit-details-marker{display:none;}
+  .assumption-details summary::before{content:"▸ "; color:#2563EB; font-size:12px;}
+  .assumption-details[open] summary::before{content:"▾ ";}
+  .assumption-count{font-size:12px; color:var(--ink-soft); font-weight:400; font-family:'IBM Plex Sans',sans-serif;}
+  .assumption-table{width:100%; border-collapse:collapse; margin-top:14px; font-size:13px;}
+  .assumption-table th{
+    text-align:left; font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--ink-soft); padding:8px 10px; border-bottom:1px solid var(--hairline);
+  }
+  .assumption-table td{padding:9px 10px; border-bottom:1px solid var(--hairline); color:var(--ink); vertical-align:top;}
+  .assumption-table tr:last-child td{border-bottom:none;}
+  .conf-pill{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px;
+  }
+  .conf-pill.conf-high{background:var(--forest-bg); color:var(--forest);}
+  .conf-pill.conf-medium{background:#FBF1DC; color:var(--brass);}
+  .conf-pill.conf-low{background:var(--brick-bg); color:var(--brick);}
+  .case-section{margin-top:34px; max-width:780px;}
+  .case-section h3{font-size:18px; margin-bottom:10px;}
+  .case-section p{font-size:14.5px; color:var(--ink-soft); line-height:1.65;}
+  .case-section a{color:var(--brass);}
+  .case-list{margin:6px 0 0; padding-left:20px;}
+  .case-list li{font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:8px;}
+  .case-output-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:16px 0 20px;}
+  @media (max-width:760px){ .case-output-grid{grid-template-columns:1fr 1fr;} }
+  .case-output-grid div{border:1px solid var(--hairline); border-radius:var(--radius); padding:16px; background:var(--paper-raised);}
+  .case-output-grid b{display:block; font-family:'IBM Plex Mono', monospace; font-size:21px; color:var(--ink); margin-bottom:6px;}
+  .case-output-grid span{font-size:12px; color:var(--ink-soft); line-height:1.4;}
+  .run-scenario-btn, a.run-scenario-btn{
+    display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600;
+    padding:11px 22px; background:#2563EB; color:#fff !important; border-radius:8px; border-bottom:none; font-weight:700;
+  }
+  .run-scenario-btn:hover{background:#0D1B4B;}
+  .cs-hero{padding:32px 0 24px;}
+  .cs-title{font-size:32px; font-weight:800; color:#0D1B4B; margin:8px 0;}
+  .cs-sub{font-size:16px; color:var(--ink-soft); max-width:700px; line-height:1.6; margin:0;}
+  .cs-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:20px;}
+  @media (max-width:760px){ .cs-grid{grid-template-columns:1fr;} }
+  .cs-card{background:var(--paper-raised); border-radius:10px; padding:22px 24px; box-shadow:0 2px 8px rgba(13,27,75,0.09);}
+  .cs-card-wide{grid-column:1/-1;}
+  .cs-card-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--blue-bright); font-weight:700; margin-bottom:12px;}
+  .cs-card p{font-size:14px; color:var(--ink-soft); line-height:1.65; margin:0;}
+  .cs-list{margin:0; padding-left:18px;}
+  .cs-list li{font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:7px;}
+  .cs-fact-rows{display:flex; flex-direction:column; gap:0;}
+  .cs-fact{display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:8px 0; border-bottom:1px solid var(--hairline); font-size:13.5px;}
+  .cs-fact:last-child{border-bottom:none;}
+  .cs-fact span{color:var(--ink-soft);}
+  .cs-fact b{color:var(--ink); font-family:'IBM Plex Mono', monospace; font-size:13px; text-align:right;}
+  .cs-source{font-size:11.5px; color:var(--ink-soft); margin-top:14px; font-style:italic;}
+  .cs-section-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:.10em; color:var(--blue-bright); font-weight:700; margin:36px 0 14px; display:flex; align-items:center; gap:10px;}
+  .cs-section-label::after{content:""; flex:1; height:1.5px; background:var(--hairline);}
+  .cs-metric-card{background:var(--paper-raised); border-radius:10px; padding:22px 20px; box-shadow:0 2px 8px rgba(13,27,75,0.09); text-align:center;}
+  .cs-metric-num{font-family:'IBM Plex Sans', monospace; font-size:36px; font-weight:800; color:#0D1B4B; line-height:1;}
+  .cs-metric-label{font-size:13.5px; color:var(--ink); font-weight:600; margin:8px 0 4px;}
+  .cs-metric-sub{font-size:11.5px; color:var(--ink-soft);}
+  .cs-run-btn{
+    display:inline-block; margin-top:16px; font-family:'IBM Plex Mono', monospace; font-size:13px;
+    font-weight:700; padding:11px 22px; background:#2563EB; color:#fff !important; border-radius:8px;
+    border-bottom:none;
+  }
+  .cs-run-btn:hover{background:#0D1B4B;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="ny-banner">
+    <div class="photo-panel">
+      <div class="photo-cell" style="background-image:url('https://images.unsplash.com/photo-1527305265013-ddd1054521d6?w=800&auto=format&fit=crop&q=85&crop=center')"></div>
+      <div class="photo-cell" style="background-image:url('https://images.unsplash.com/photo-1637123433690-228bb002d9e9?w=800&auto=format&fit=crop&q=85&crop=center')"></div>
+      <div class="photo-cell" style="background-image:url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=85&crop=center')"></div>
+    </div>
+  </div>
+
+  <header>
+    <div class="header-top">
+      <div class="eyebrow">A civic tool, not a talking point</div>
+      <div class="header-meta-right">
+        <a class="ghbtn" href="https://github.com/28murraychase-beep/civicimpact-simulator" target="_blank">View Source on GitHub</a>
+        <div class="version-tag">
+          CivicImpact · <b>v1.0</b> · June 2026
+          <button class="changelog-link" id="changelogToggle">View Changelog</button>
+        </div>
+      </div>
+    </div>
+    <h1 class="hero-title">CivicImpact</h1>
+    <p class="hero-sub">Run the numbers before you run the argument.</p>
+    <p class="tagline">Transparent assumptions. Evidence-informed estimates. Open methodology.</p>
+    <div class="hero-meta">
+      <div><b>15 calibrated national models</b>plus a build-your-own engine</div>
+      <div><b>11 program mechanisms × 5 funding sources</b>covers nearly any real proposal</div>
+      <div><b>0 installs</b>runs entirely in this browser tab</div>
+    </div>
+  </header>
+
+  <div class="changelog-panel" id="changelogPanel">
+    <h3>Changelog</h3>
+    <div class="cl-entry"><b>v1.0 — June 2026</b> About the Creator, confidence labels, assumption tables, sourced citations beside results, NY PFL Case Study tab, feedback channel, roadmap.</div>
+    <div class="cl-entry"><b>v0.6</b> Added Sources &amp; Methodology tab listing every document used.</div>
+    <div class="cl-entry"><b>v0.5</b> Replaced generic national political assumptions with real NYS Board of Elections voter registration data, county by county.</div>
+    <div class="cl-entry"><b>v0.4</b> Added the NY County Housing Explorer (all 62 counties); converted manual number entry to dropdowns with a Custom fallback.</div>
+    <div class="cl-entry"><b>v0.3</b> Added the Build Your Own Scenario engine — 11 program mechanisms × 5 funding sources.</div>
+    <div class="cl-entry"><b>v0.2</b> Ported the original Python/Colab notebook into a standalone, no-install browser page.</div>
+    <div class="cl-entry"><b>v0.1</b> Initial Google Colab research notebook — 15 policy modules in Python.</div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tabbtn active" data-tab="library">National Policy Library</button>
+    <button class="tabbtn" data-tab="builder">Build Your Own Scenario</button>
+    <button class="tabbtn" data-tab="nycounty">NY County Housing Explorer</button>
+    <button class="tabbtn" data-tab="casestudy">Case Study</button>
+    <button class="tabbtn" data-tab="sources">Sources & Methodology</button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 1: FIXED 15-POLICY LIBRARY                                 -->
+  <!-- ============================================================ -->
+  <div class="tabpanel active" id="panel-library">
+    <section class="deck">
+      <div class="field">
+        <label for="policy">Policy area</label>
+        <select id="policy"></select>
+      </div>
+      <div class="field">
+        <label for="pop">Population modeled</label>
+        <div class="slider-row">
+          <input type="range" id="pop" min="100000" max="20000000" step="100000" value="2000000">
+          <span class="slider-val" id="popVal">2,000,000</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="years">Time horizon</label>
+        <div class="slider-row">
+          <input type="range" id="years" min="1" max="20" step="1" value="10">
+          <span class="slider-val" id="yearsVal">10 yrs</span>
+        </div>
+      </div>
+    </section>
+    <div class="interpret-note"><b>How to interpret these results:</b> this is scenario analysis, not prediction. These are estimated outcomes under the assumptions shown above — useful for comparing tradeoffs between policies, not for forecasting an exact future. Actual outcomes depend on implementation, economic conditions, and behavioral responses outside this model's scope.</div>
+    <div class="ledger-shell" id="ledgerA"></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 2: BUILD-YOUR-OWN SCENARIO ENGINE                          -->
+  <!-- ============================================================ -->
+  <div class="tabpanel" id="panel-builder">
+
+    <div class="builder-section">
+      <div class="section-label">1 — Name your scenario</div>
+      <section class="deck cols-2">
+        <div class="field">
+          <label for="scenarioName">Scenario name</label>
+          <input type="text" id="scenarioName" value="My Custom Policy Scenario">
+        </div>
+        <div class="field">
+          <label for="geoLabel">Geography label</label>
+          <input type="text" id="geoLabel" value="New York State">
+        </div>
+      </section>
+    </div>
+
+    <div class="builder-section">
+      <div class="section-label">2 — Or load a worked example</div>
+      <div class="example-bar">
+        <select id="exampleSelect">
+          <option value="">— choose an example to auto-fill everything below —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="builder-section">
+      <div class="section-label">3 — Population & time horizon</div>
+      <section class="deck cols-2">
+        <div class="field">
+          <label for="popB">Population in scope</label>
+          <div class="slider-row">
+            <input type="range" id="popB" min="50000" max="40000000" step="50000" value="19800000">
+            <span class="slider-val" id="popBVal">19,800,000</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="yearsB">Time horizon</label>
+          <div class="slider-row">
+            <input type="range" id="yearsB" min="1" max="30" step="1" value="5">
+            <span class="slider-val" id="yearsBVal">5 yrs</span>
+          </div>
+          <p class="help">Spreads lump-sum budgets and capital costs (Cash, Infrastructure) into an annual rate. For mechanisms that are already an annual rate (staffing, leave, tax, etc.), this won't move the headline numbers — that's intentional, not a bug.</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="builder-section">
+      <div class="section-label">4 — Program mechanism</div>
+      <section class="deck cols-1">
+        <div class="field">
+          <label for="mechanism">What kind of program is this?</label>
+          <select id="mechanism"></select>
+          <p class="mech-desc" id="mechDesc"></p>
+        </div>
+      </section>
+      <div class="field-grid" id="mechFields"></div>
+    </div>
+
+    <div class="builder-section">
+      <div class="section-label">5 — Where does the money come from?</div>
+      <section class="deck cols-1">
+        <div class="field">
+          <label for="fundingSource">Funding source</label>
+          <select id="fundingSource"></select>
+          <p class="mech-desc" id="fundingDesc"></p>
+        </div>
+      </section>
+    </div>
+
+    <div class="interpret-note"><b>How to interpret these results:</b> this is scenario analysis, not prediction. Results represent estimated outcomes under the assumptions you've chosen above — built to help you compare tradeoffs, not forecast an exact outcome. Real-world results depend on implementation, economic conditions, and behavioral responses this model can't fully capture.</div>
+    <div class="ledger-shell" id="ledgerB"></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 3: NY COUNTY HOUSING EXPLORER                              -->
+  <!-- ============================================================ -->
+  <div class="tabpanel" id="panel-nycounty">
+    <section class="deck cols-2">
+      <div class="field">
+        <label for="nyCounty">County</label>
+        <select id="nyCounty"></select>
+      </div>
+      <div class="field">
+        <label for="nyPool">Statewide pool being distributed by population share</label>
+        <select id="nyPool">
+          <option value="50000000">$50M statewide</option>
+          <option value="100000000">$100M statewide</option>
+          <option value="335000000" selected>$335M statewide</option>
+          <option value="500000000">$500M statewide</option>
+          <option value="1000000000">$1B statewide</option>
+        </select>
+      </div>
+    </section>
+    <section class="deck cols-2">
+      <div class="field">
+        <label for="nyAssist">Down-payment assistance per recipient</label>
+        <select id="nyAssist">
+          <option value="10000">$10,000</option>
+          <option value="15000" selected>$15,000 (matches SONYMA DPAL cap)</option>
+          <option value="20000">$20,000</option>
+          <option value="30000">$30,000 (matches SONYMA DPAL PLUS cap)</option>
+          <option value="0.03home">3% of county median home value</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="nyMortgageRate">Assumed mortgage rate (for interest deduction estimate)</label>
+        <select id="nyMortgageRate">
+          <option value="0.055">5.5%</option>
+          <option value="0.0625">6.25%</option>
+          <option value="0.0675" selected>6.75%</option>
+          <option value="0.0725">7.25%</option>
+          <option value="0.08">8.0%</option>
+        </select>
+      </div>
+    </section>
+    <div class="interpret-note"><b>How to interpret these results:</b> this is scenario analysis, not prediction. The county-level numbers below combine real public data (population, home values, tax rates, voter registration) with a simplified allocation rule — they show what a population-proportional program could look like, not what any county government has actually proposed or approved.</div>
+    <div class="ledger-shell" id="ledgerC"></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- CASE STUDY TAB: NY PAID FAMILY LEAVE                          -->
+  <!-- ============================================================ -->
+  <div class="tabpanel" id="panel-casestudy">
+
+    <div class="cs-hero">
+      <div class="eyebrow">Real NYS Policy · Case Study</div>
+      <h2 class="cs-title">New York State Paid Family Leave</h2>
+      <p class="cs-sub">An analysis of one of New York's most significant worker-protection laws — its real fiscal structure, real program outcomes, and the political tradeoffs that shaped it.</p>
+    </div>
+
+    <div class="cs-grid">
+
+      <div class="cs-card cs-card-wide">
+        <div class="cs-card-label">Background</div>
+        <p>New York enacted Paid Family Leave (PFL) in 2016 as an addition to the state's existing short-term disability benefits law. The program phased in starting in 2018 and reached its current structure — 12 weeks of job-protected, paid leave — by 2021. New York was the fourth state in the country to offer family leave insurance, after California (2004), New Jersey (2009), and Rhode Island (2014). PFL is funded entirely through employee payroll deductions; employers pay nothing into the program.</p>
+      </div>
+
+      <div class="cs-card">
+        <div class="cs-card-label">What the law covers</div>
+        <ul class="cs-list">
+          <li>Bonding with a newborn, adopted, or foster child (within the first 12 months)</li>
+          <li>Caring for a close family member with a serious health condition</li>
+          <li>Family needs arising from a spouse, domestic partner, child, or parent being deployed abroad on active military service</li>
+        </ul>
+      </div>
+
+      <div class="cs-card">
+        <div class="cs-card-label">2026 Program Parameters</div>
+        <div class="cs-fact-rows">
+          <div class="cs-fact"><span>Duration</span><b>12 weeks per 52-week period</b></div>
+          <div class="cs-fact"><span>Wage replacement rate</span><b>67% of employee's average weekly wage</b></div>
+          <div class="cs-fact"><span>Maximum weekly benefit</span><b>$1,228.53</b></div>
+          <div class="cs-fact"><span>Statewide avg. weekly wage (2026)</span><b>$1,833.63</b></div>
+          <div class="cs-fact"><span>Employee payroll deduction rate</span><b>0.432% of gross wages</b></div>
+          <div class="cs-fact"><span>Annual employee contribution cap</span><b>$411.91</b></div>
+          <div class="cs-fact"><span>Employer cost</span><b>$0 — fully employee-funded</b></div>
+        </div>
+        <p class="cs-source">Sources: paidfamilyleave.ny.gov (2026); NYSIF; NYS Dept. of Financial Services.</p>
+      </div>
+
+    </div>
+
+    <div class="cs-section-label">Real Program Outcomes</div>
+    <div class="cs-grid">
+
+      <div class="cs-metric-card">
+        <div class="cs-metric-num">~9M</div>
+        <div class="cs-metric-label">Workers covered statewide</div>
+        <div class="cs-metric-sub">As of 2023 · NYS Comptroller</div>
+      </div>
+      <div class="cs-metric-card">
+        <div class="cs-metric-num">$872M</div>
+        <div class="cs-metric-label">Benefits paid in 2021 alone</div>
+        <div class="cs-metric-sub">On ~156,000 approved claims</div>
+      </div>
+      <div class="cs-metric-card">
+        <div class="cs-metric-num">$2.2B+</div>
+        <div class="cs-metric-label">Total benefits paid, first 4 years</div>
+        <div class="cs-metric-sub">550,000+ approved claims (2018–2021)</div>
+      </div>
+      <div class="cs-metric-card">
+        <div class="cs-metric-num">80%</div>
+        <div class="cs-metric-label">Of claims are for newborn bonding</div>
+        <div class="cs-metric-sub">By dollar amount · NYS Comptroller</div>
+      </div>
+      <div class="cs-metric-card">
+        <div class="cs-metric-num">66%</div>
+        <div class="cs-metric-label">Of all claims filed by women</div>
+        <div class="cs-metric-sub">By claim count · NYS Comptroller</div>
+      </div>
+      <div class="cs-metric-card">
+        <div class="cs-metric-num">88%</div>
+        <div class="cs-metric-label">Of private-sector workers eligible</div>
+        <div class="cs-metric-sub">As of 2021 vs. 23% nationally</div>
+      </div>
+
+    </div>
+
+    <div class="cs-section-label">Simulator Comparison</div>
+    <div class="cs-card cs-card-wide">
+      <div class="cs-card-label">How the National Policy Library model compares to the real NYS program</div>
+      <table class="assumption-table">
+        <thead><tr><th>Parameter</th><th>CivicImpact Model (National)</th><th>Real NY PFL (2026)</th></tr></thead>
+        <tbody>
+          <tr><td>Duration</td><td>12 weeks (default)</td><td>12 weeks ✓</td></tr>
+          <tr><td>Wage replacement</td><td>66% (default)</td><td>67% — closely matched</td></tr>
+          <tr><td>Payroll tax rate</td><td>0.4% (default)</td><td>0.432% — slightly higher than model</td></tr>
+          <tr><td>Funding mechanism</td><td>Dedicated payroll tax</td><td>Employee-only payroll deduction ✓</td></tr>
+          <tr><td>Employer cost</td><td>Small admin cost modeled</td><td>$0 direct employer cost (NY-specific)</td></tr>
+          <tr><td>Max benefit cap</td><td>Not individually modeled</td><td>$1,228.53/week (67% of NYSAWW)</td></tr>
+        </tbody>
+      </table>
+      <p class="cs-source" style="margin-top:12px;">The CivicImpact national model is calibrated as a general-purpose baseline — the real NYS program numbers above show how close a well-designed policy can track a simple model, and where the model's simplifications matter most (the employer cost assumption is the biggest gap for NY specifically, since NY PFL is 100% employee-funded).</p>
+    </div>
+
+    <div class="cs-section-label">Political Context</div>
+    <div class="cs-card cs-card-wide">
+      <div class="cs-card-label">How it passed — and why it holds</div>
+      <p>NY PFL passed with broad bipartisan support in the state legislature in 2016, signed by Governor Cuomo. The key to its political durability is financing design: because it is funded entirely by employee payroll deductions with no employer mandate and no general-fund cost to the state, it avoided the typical employer-opposition coalition that sinks most leave mandates. The program has expanded steadily since 2018 — from 8 weeks at 50% wage replacement to 12 weeks at 67% — without a major legislative fight at any expansion step. The simulator's political model scores this type of program (paid leave, employee-funded) at roughly 78/100 progressive support, 48/100 conservative support, and 35/100 libertarian support — consistent with the real legislative record, where opposition came primarily from small-business and Chamber of Commerce groups, not from legislators themselves.</p>
+    </div>
+
+    <div class="cs-section-label">Run It in the Simulator</div>
+    <div class="cs-card cs-card-wide">
+      <div class="cs-card-label">Model the NY PFL program yourself</div>
+      <p>The Build Your Own Scenario tab lets you input the real NY PFL parameters (0.432% payroll contribution, 67% wage replacement, 12 weeks, NY State population of 19.8M) and compare the model's output to the real outcomes above. Switch to the National Policy Library's "Paid Family &amp; Maternity Leave" model to see the national-scale equivalent.</p>
+      <a class="cs-run-btn" id="runPFLScenario" href="#">Model NY PFL in the simulator →</a>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SOURCES & METHODOLOGY TAB                                      -->
+  <!-- ============================================================ -->
+  <div class="tabpanel" id="panel-sources">
+    <header style="padding-top:0;">
+      <h2 style="font-size:28px;">Every source used in this app</h2>
+      <p class="hero-sub" style="font-size:15px; max-width:760px; margin-top:10px;">
+        Two different kinds of sourcing went into CivicImpact. The NY County Housing Explorer
+        is built from specific documents fetched and verified during development — listed below
+        with links. The 15 National Policy Library models are calibrated from general public-data
+        categories rather than individual live documents — also listed, separately, so it's clear
+        which is which.
+      </p>
+    </header>
+
+    <div class="src-group">
+      <div class="src-count">6 documents</div>
+      <h3>NY County Population & Housing Values</h3>
+      <p class="src-desc">Used to populate population, region, and median home value for all 62 counties.</p>
+      <div class="src-list">
+        <div class="src-item"><div class="src-name"><a href="https://www.newyork-demographics.com/counties_by_population" target="_blank">New York Counties by Population (2026)</a></div><div class="src-used"><b>Used for</b>2024 ACS 5-Year population figures for all 62 counties.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.tax.ny.gov/research/property/assess/sales/resmedian.htm" target="_blank">NYS Dept. of Taxation & Finance — Residential Median Sale Price by County</a></div><div class="src-used"><b>Used for</b>2025 median home sale price for the 57 non-NYC counties.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.zillow.com/home-values/2452/new-york-county-ny/" target="_blank">Zillow Home Value Index — New York County (Manhattan)</a></div><div class="src-used"><b>Used for</b>Median home value for Manhattan (not covered by the state's median-sale-price report, which excludes NYC).</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.zillow.com/home-values/37607/brooklyn-new-york-ny/" target="_blank">Zillow Home Value Index — Kings County (Brooklyn)</a></div><div class="src-used"><b>Used for</b>Median home value for Brooklyn.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.zillow.com/home-values/270915/queens-new-york-ny/" target="_blank">Zillow Home Value Index — Queens County</a></div><div class="src-used"><b>Used for</b>Median home value for Queens.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.zillow.com/home-values/17182/bronx-new-york-ny/" target="_blank">Zillow Home Value Index — Bronx County</a></div><div class="src-used"><b>Used for</b>Median home value for the Bronx.</div></div>
+      </div>
+    </div>
+
+    <div class="src-group">
+      <div class="src-count">3 documents</div>
+      <h3>Property Tax Rates & STAR Exemption</h3>
+      <p class="src-desc">Used for each county's effective property tax rate and the Basic STAR exemption savings figure.</p>
+      <div class="src-list">
+        <div class="src-item"><div class="src-name"><a href="https://propertytaxbystate.com/new-york" target="_blank">PropertyTaxByState.com — New York Property Tax Rates 2026</a></div><div class="src-used"><b>Used for</b>Effective property tax rate (Census ACS-derived) for all 62 counties.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://smartasset.com/taxes/new-york-property-tax-calculator" target="_blank">SmartAsset — New York Property Tax Calculator</a></div><div class="src-used"><b>Used for</b>Cross-checking county effective rates; STAR/Enhanced STAR/Veteran/Senior exemption details.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.tax.ny.gov/data/stats/taxfacts/property-tax.htm" target="_blank">NYS Dept. of Taxation & Finance — Property Tax statistics</a></div><div class="src-used"><b>Used for</b>Statewide STAR program totals and Basic/Enhanced STAR savings figures.</div></div>
+      </div>
+    </div>
+
+    <div class="src-group">
+      <div class="src-count">5 documents</div>
+      <h3>Mortgage Recording Tax & Closing Costs</h3>
+      <p class="src-desc">Used to model the real mortgage recording tax tiers shown for each county's purchase.</p>
+      <div class="src-list">
+        <div class="src-item"><div class="src-name"><a href="https://www.tax.ny.gov/pit/mortgage/mtgidx.htm" target="_blank">NYS Dept. of Taxation & Finance — Mortgage Recording Tax</a></div><div class="src-used"><b>Used for</b>State basic/special-additional/additional tax structure (0.50% + 0.25% + 0.25%/0.30% MTA-district).</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://gadurarealestate.com/blog/nyc-mortgage-recording-tax-explained.html" target="_blank">NYC Mortgage Recording Tax Explained 2026 — Nitin Gadura</a></div><div class="src-used"><b>Used for</b>Buyer-effective rate after lender-paid 0.25%; MTA-district county list; Long Island comparison rate.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.hauseit.com/mortgage-recording-tax-nyc/" target="_blank">Hauseit — How Much Is the NYC Mortgage Recording Tax?</a></div><div class="src-used"><b>Used for</b>Confirming NYC's 1.8% / 1.925% tiered rate by loan size.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.nyc.gov/assets/finance/downloads/pdf/reports/reports_mrt/2023-mrt-report.pdf" target="_blank">NYC Dept. of Finance — Statistical Profile of the Mortgage Recording Tax</a></div><div class="src-used"><b>Used for</b>Official confirmation of NYC's combined state + city MRT structure.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://sishodia.com/how-do-i-avoid-mortgage-recording-tax-in-ny/" target="_blank">Sishodia PLLC — Avoiding Mortgage Recording Tax in NYC</a></div><div class="src-used"><b>Used for</b>Cross-checking Manhattan's 2.05%–2.175% combined rate range.</div></div>
+      </div>
+    </div>
+
+    <div class="src-group">
+      <div class="src-count">6 documents</div>
+      <h3>NY & NYC Homebuyer Assistance Programs</h3>
+      <p class="src-desc">Used for the real, current down-payment assistance programs shown as stackable options.</p>
+      <div class="src-list">
+        <div class="src-item"><div class="src-name"><a href="https://hcr.ny.gov/down-payment-assistant-loan-dpal" target="_blank">NYS Homes & Community Renewal — SONYMA Down Payment Assistance Loan (DPAL)</a></div><div class="src-used"><b>Used for</b>$15,000 statewide DPAL cap, terms, 10-year forgiveness structure.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://hcr.ny.gov/dpal-plus-2026-term-sheet" target="_blank">NYS HCR — DPAL PLUS 2026 Term Sheet</a></div><div class="src-used"><b>Used for</b>$30,000 enhanced DPAL cap for low-income buyers (≤60% AMI), limited funding pool.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.fha.com/grants/sonyma-down-payment-assistance-loan" target="_blank">FHA.com — SONYMA Down Payment Assistance Loan</a></div><div class="src-used"><b>Used for</b>Cross-checking DPAL loan terms and cash-contribution requirements.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.nyc.gov/site/hpd/services-and-information/homefirst-down-payment-assistance-program.page" target="_blank">NYC HPD — HomeFirst Down Payment Assistance Program</a></div><div class="src-used"><b>Used for</b>$100,000 NYC-only down payment assistance cap, eligibility, 5-borough restriction.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.nyc.gov/site/hpd/news/055-21/homefirst-down-payment-assistance-program-now-offering-first-time-buyers-up-100-000-support" target="_blank">NYC HPD Press Release — HomeFirst expansion to $100,000</a></div><div class="src-used"><b>Used for</b>Confirming the current $100,000 cap (up from a prior $40,000).</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.bankrate.com/mortgages/new-york-first-time-homebuyer-assistance-programs/" target="_blank">Bankrate — New York First-Time Homebuyer Assistance Programs</a></div><div class="src-used"><b>Used for</b>Federal Home Loan Bank of NY Homebuyer Dream Program ($30,000 grant, ≤80% AMI).</div></div>
+      </div>
+    </div>
+
+    <div class="src-group">
+      <div class="src-count">4 documents</div>
+      <h3>NY Paid Family Leave — Case Study Sources</h3>
+      <p class="src-desc">Used to populate all real program parameters, outcomes, and fiscal figures shown in the Case Study tab.</p>
+      <div class="src-list">
+        <div class="src-item"><div class="src-name"><a href="https://paidfamilyleave.ny.gov/2026" target="_blank">NY.gov — Paid Family Leave 2026 Program Parameters</a></div><div class="src-used"><b>Used for</b>2026 wage replacement rate (67%), maximum weekly benefit ($1,228.53), statewide average weekly wage ($1,833.63), and 12-week duration.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.nysif.com/paidfamilyleave" target="_blank">NYSIF — Paid Family Leave Employer &amp; Employee Guide</a></div><div class="src-used"><b>Used for</b>2026 payroll contribution rate (0.432%), annual employee cap ($411.91), and employer cost structure ($0 employer contribution).</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://www.osc.ny.gov/reports/new-yorks-paid-family-leave-program" target="_blank">NYS Comptroller — New York's Paid Family Leave Program</a></div><div class="src-used"><b>Used for</b>Real program outcomes: ~9M workers covered, $872M paid on ~156,000 claims in 2021, $2.2B+ total in first 4 years, 80% of payments for newborn bonding, 66% of claims filed by women, 88% of private-sector workers eligible.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://paidfamilyleave.ny.gov/cost" target="_blank">NY.gov — Paid Family Leave Cost &amp; Deductions</a></div><div class="src-used"><b>Used for</b>Historical deduction rates by year (2023–2026) and statewide average weekly wage history.</div></div>
+      </div>
+    </div>
+
+    <div class="src-group">
+      <div class="src-count">3 documents</div>
+      <h3>Voter Registration by County</h3>
+      <p class="src-desc">Used to replace the generic national political-support assumption with each county's real, current registration.</p>
+      <div class="src-list">
+        <div class="src-item"><div class="src-name"><a href="https://elections.ny.gov/enrollment-county" target="_blank">New York State Board of Elections — Enrollment by County</a></div><div class="src-used"><b>Used for</b>Locating the official enrollment report series and confirming report structure/categories.</div></div>
+        <div class="src-item"><div class="src-name">NYS Board of Elections — "Voters Registered by County as of February 20, 2026" (county_feb26.xlsx)</div><div class="src-used"><b>Used for</b>The actual Democratic/Republican/Conservative/Working Families/Other/Blank registration counts for all 62 counties, provided directly by the user from the official NYS BOE file and parsed for this app.</div></div>
+        <div class="src-item"><div class="src-name"><a href="https://citizenparticipation.westchestercountyny.gov/images/stories/pdfs/2026/2026enrollActive%202-20-26.pdf" target="_blank">Westchester County Board of Elections — 2026 County Legislative Districts Active Enrollment</a></div><div class="src-used"><b>Used for</b>Per-district (1st–17th) Democratic/Republican/Conservative/Independence enrollment, mapped to Westchester's 17-member Board of Legislators — shown only on the Westchester County page.</div></div>
+      </div>
+    </div>
+
+    <div class="src-group">
+      <div class="src-count">~30 source categories</div>
+      <h3>National Policy Library — General Calibration Sources</h3>
+      <p class="src-desc">
+        The 15 National Policy Library models (housing, paid leave, immigration, education, healthcare,
+        carbon tax, policing, transit, tax policy, subsidies, mental health, homebuyer incentives, campaign
+        finance, surveillance) are <b>not</b> built from a specific document each — they're order-of-magnitude
+        estimates calibrated against well-established public-data categories below, in the same way an
+        analyst would sanity-check assumptions against known public sources. These are general references,
+        not individually-fetched documents like the lists above.
+      </p>
+      <div class="source-list" style="margin-top:4px;">
+        <span id="src-censusacs">U.S. Census Bureau</span><span>American Community Survey</span><span id="src-bls">Bureau of Labor Statistics</span>
+        <span>FRED (St. Louis Fed)</span><span id="src-cdc">CDC</span><span id="src-fbicde">FBI Crime Data Explorer</span><span id="src-epa">EPA</span>
+        <span id="src-hud">HUD</span><span id="src-deptofeducation">Dept. of Education</span><span id="src-dol">Dept. of Labor</span><span id="src-dot">Dept. of Transportation</span>
+        <span id="src-nysed">NYSED</span><span id="src-mtaopendata">MTA Open Data</span><span>NY State Open Data</span><span>Westchester County Open Data</span>
+        <span>MIT Election Data &amp; Science Lab</span><span id="src-fec">FEC</span><span id="src-opensecrets">OpenSecrets</span><span>Congress.gov</span>
+        <span id="src-cbo">CBO</span><span id="src-gao">GAO</span><span>Pew Research</span><span>Gallup</span><span id="src-kff">KFF</span>
+        <span>Brookings</span><span>AEI</span><span>Cato Institute</span><span id="src-urbaninstitute">Urban Institute</span>
+        <span>RAND</span><span id="src-nber">NBER</span><span>OECD</span><span>World Bank</span>
+      </div>
+    </div>
+
+    <div class="disclaimer" style="margin-top:34px;">
+      Links open the original source in a new tab. Figures were accurate as of each source's publication
+      or last-updated date noted on its page — property values, tax rates, program caps, and voter
+      registration all change over time, so treat every number in this app as a snapshot, not a live feed.
+    </div>
+  </div>
+
+
+  <section class="method">
+    <h3>How this works</h3>
+    <p>
+      The Policy Library runs 15 nationally-calibrated models, each with its own tuned assumptions.
+      The Scenario Builder works differently: almost any real program — anywhere in the world —
+      reduces to a <b>mechanism</b> (what the money does), a <b>funding source</b> (where the money
+      comes from), and a <b>population/budget</b>. Pick those three, and the same transparent math
+      that powers the Library runs your custom idea. That's how one engine can model your city's
+      $335M statewide housing program and a national paid-leave bill without needing a separate hand-built
+      entry for each.
+    </p>
+    <p>
+      This is the browser-based companion to a full Python/Colab notebook with sensitivity analysis
+      and exportable memos. Every number is a directional estimate from documented assumptions, not
+      a forecast — change any input and the ledger updates instantly so you can see exactly which
+      assumptions are driving the result.
+    </p>
+    <div class="source-list">
+      <span>Census / ACS</span><span>BLS</span><span>FRED</span><span>CBO</span><span>HUD</span>
+      <span>DOL</span><span>EPA</span><span>FBI CDE</span><span>KFF</span><span>Pew Research</span>
+      <span>NBER</span><span>Urban Institute</span>
+    </div>
+    <div class="disclaimer">
+      Educational/research tool using simplified, assumption-driven models — not a substitute for
+      an official legislative fiscal note, a bond prospectus review, or peer-reviewed economic
+      analysis. Every figure above is a directional estimate, not a guarantee.
+    </div>
+  </section>
+
+  <section class="roadmap-section" id="roadmap">
+    <h3>Roadmap</h3>
+    <p class="roadmap-intro">Upcoming improvements, roughly in priority order:</p>
+    <ul class="roadmap-list">
+      <li class="done">Monte Carlo / uncertainty ranges instead of single-point estimates</li>
+      <li>Confidence intervals shown directly on every chart</li>
+      <li>Historical validation against real program outcomes where data exists</li>
+      <li>County-level forecasting for states beyond New York</li>
+      <li>Live API integration (Census/BLS/FRED) instead of static calibration</li>
+      <li>Exportable PDF policy reports</li>
+      <li>Downloadable policy memos (Markdown/Word)</li>
+    </ul>
+  </section>
+
+  <section class="about-creator">
+    <h3>About the Creator</h3>
+    <p>
+      CivicImpact was created by <b>Chase Murray</b>, a student and New York native passionate about political
+      science, economics, and civic technology.
+    </p>
+    <p>
+      The project began as a Google Colab research notebook exploring how interactive simulations
+      could make public policy analysis more transparent and accessible. It has since evolved into
+      a browser-based platform that helps users examine fiscal, economic, demographic, and political
+      tradeoffs under clearly documented assumptions.
+    </p>
+    <p>
+      CivicImpact is an independent educational project and is not affiliated with any government
+      agency, political campaign, or advocacy organization.
+    </p>
+    <div class="creator-links">
+      <a class="icon-badge" href="https://github.com/28murraychase-beep/civicimpact-simulator" target="_blank" aria-label="GitHub" title="GitHub">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#1C2333"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.333-1.754-1.333-1.754-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.605-2.665-.305-5.466-1.334-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+      </a>
+      <a class="icon-badge" href="mailto:chasebusinessmurray@gmail.com" aria-label="Email (Gmail)" title="Email">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#EA4335"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.904.732-1.636 1.636-1.636h.55l9.768 7.371 9.768-7.371h.55c.904 0 1.636.732 1.636 1.636z"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <section class="feedback-section">
+    <h3>Found a bug? Have a policy suggestion? Notice an incorrect assumption?</h3>
+    <a class="feedback-btn" href="mailto:chasebusinessmurray@gmail.com?subject=CivicImpact%20Feedback">Send Feedback</a>
+  </section>
+<footer>
+    CivicImpact — General Policy Impact Simulator. Open source, MIT licensed. Built for political
+    science classrooms, local newsrooms, campaign researchers, and anyone who wants the numbers
+    before the argument.
+  </footer>
+</div>
+
+<script>
+/* =================================================================
+   SHARED HELPERS
+   ================================================================= */
+const fmtUSD = (n) => {
+  const sign = n < 0 ? "−" : "";
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return sign + "$" + (abs/1e9).toFixed(2) + "B";
+  if (abs >= 1e6) return sign + "$" + (abs/1e6).toFixed(2) + "M";
+  if (abs >= 1e3) return sign + "$" + (abs/1e3).toFixed(0) + "K";
+  return sign + "$" + abs.toFixed(0);
+};
+const fmtNum = (n) => Math.round(n).toLocaleString();
+const fmtUSDPrecise = (n) => {
+  const sign = n < 0 ? "−" : "";
+  return sign + "$" + Math.round(Math.abs(n)).toLocaleString();
+};
+
+function scorePolitical(priors, costPC, benefitPC, difficulty){
+  const [left, right, lib] = priors;
+  const costDrag = Math.min(20, costPC/50.0);
+  const benefitLift = Math.min(15, benefitPC/100.0);
+  const diffDrag = difficulty*10;
+  const clamp = (x) => Math.max(0, Math.min(100, x));
+  const leftScore = clamp(left + benefitLift - costDrag*0.5 - diffDrag*0.4);
+  const rightScore = clamp(right + benefitLift*0.4 - costDrag*1.2 - diffDrag*0.6);
+  const libScore = clamp(lib - costDrag*1.5 - diffDrag*0.8);
+  const polarization = Math.max(leftScore,rightScore,libScore) - Math.min(leftScore,rightScore,libScore);
+  const risk = polarization > 30 ? "high" : (polarization > 15 ? "moderate" : "low");
+  return {leftScore, rightScore, libScore, polarization, risk};
+}
+
+// Renders the shared "ledger" UI block into a target container.
+// state = { title, geoTag, cost, rev, costNote, revNote, stats:[[lbl,val]...],
+//           priors, difficulty, partisan:{...}, fundingNote:{title,text} (optional) }
+/* =================================================================
+   CONFIDENCE, SOURCES & ASSUMPTION-TABLE METADATA
+   One entry per Tab-1 policy (by name) and Tab-2 mechanism (by key).
+   Confidence levels are a judgment call, not a statistical measure:
+   High = administrative/legal figures (tax rates, program caps);
+   Medium = empirical estimates with real literature behind them;
+   Low = behavioral/elasticity assumptions that are genuinely contested.
+   ================================================================= */
+const MODEL_META = {
+  "Housing Supply & Zoning Reform": {
+    cost:{level:"Medium", reason:"Permitting fee savings are based on typical municipal fee schedules; achievable savings depend on how aggressively a jurisdiction streamlines review."},
+    rev:{level:"Medium", reason:"Property tax revenue depends on actual local assessed values and millage rates, which vary widely by jurisdiction."},
+    sources:["Census / ACS","HUD"],
+    assumptions:[
+      {name:"New units enabled per 1,000 pop/yr", value:"4.0", source:"HUD permitting throughput benchmarks", confidence:"Medium"},
+      {name:"Avg. unit construction cost", value:"$280,000", source:"HUD/Census construction cost surveys", confidence:"Medium"},
+      {name:"Permitting cost reduction", value:"30%", source:"Municipal administrative-fee studies", confidence:"Low"},
+      {name:"Rent change per 10% supply increase", value:"−3%", source:"Urban housing-supply elasticity literature", confidence:"Medium"},
+      {name:"Property tax rate applied", value:"1.2%", source:"NY statewide effective rate average", confidence:"High"}
+    ]
+  },
+  "Paid Family & Maternity Leave": {
+    cost:{level:"Medium", reason:"Wage-replacement payouts scale directly with documented wage data; actual claimant uptake rates vary by state experience."},
+    rev:{level:"High", reason:"Payroll tax revenue is a direct, legally-set rate against a known wage base."},
+    sources:["BLS","DOL"],
+    assumptions:[
+      {name:"Weeks of leave", value:"12", source:"Comparable to NY/NJ/CA state programs", confidence:"High"},
+      {name:"Wage replacement rate", value:"66%", source:"NY Paid Family Leave program design", confidence:"High"},
+      {name:"Eligible workforce taking leave", value:"55% × ~12%/yr", source:"DOL/state PFL claims experience", confidence:"Medium"},
+      {name:"Average annual wage", value:"$62,000", source:"BLS national average wage", confidence:"High"},
+      {name:"Funding payroll tax rate", value:"0.4%", source:"Comparable to existing state PFL tax rates", confidence:"Medium"}
+    ]
+  },
+  "Immigration Policy (Legal Admission Levels)": {
+    cost:{level:"Medium", reason:"Visa processing costs are documented; actual admission volume depends on policy choices outside this model."},
+    rev:{level:"Low", reason:"Net fiscal contribution per worker is one of the most contested figures in the economics literature."},
+    sources:["Census / ACS","NBER"],
+    assumptions:[
+      {name:"Annual admissions per 100k pop", value:"250", source:"Illustrative scenario input, editable", confidence:"Low"},
+      {name:"Labor force participation rate", value:"68%", source:"BLS immigrant LFP averages", confidence:"Medium"},
+      {name:"Net fiscal contribution per worker", value:"$9,500/yr", source:"NAS (2016) / CBO-style estimates", confidence:"Low"},
+      {name:"Visa/admission processing cost", value:"$1,800", source:"USCIS published fee schedules", confidence:"High"}
+    ]
+  },
+  "K-12 Education Funding Increase": {
+    cost:{level:"High", reason:"This is a direct per-pupil spending increase — the cost is whatever you choose to spend, not an estimate."},
+    rev:{level:"High", reason:"No new revenue is modeled; funding source is shown separately as property tax + state aid shares."},
+    sources:["Dept. of Education","NYSED"],
+    assumptions:[
+      {name:"Per-pupil funding increase", value:"$1,200/yr", source:"Editable scenario input", confidence:"High"},
+      {name:"School-age students per 1,000 pop", value:"130", source:"Census/ACS age-distribution data", confidence:"High"},
+      {name:"Achievement gain per $1,000 spent", value:"0.015 SD", source:"Jackson, Johnson & Persico (2016), NBER", confidence:"Medium"}
+    ]
+  },
+  "Universal Pre-K": {
+    cost:{level:"High", reason:"Per-child cost is based on real NYC/DC universal pre-K program budgets."},
+    rev:{level:"Low", reason:"Tax-base offset from parental workforce participation is a modeled estimate, not directly observed."},
+    sources:["Census / ACS","Dept. of Education"],
+    assumptions:[
+      {name:"4-year-olds per 1,000 pop", value:"12", source:"Census/ACS age-distribution data", confidence:"High"},
+      {name:"Enrollment uptake rate", value:"75%", source:"NYC/DC universal pre-K enrollment experience", confidence:"Medium"},
+      {name:"Annual cost per child", value:"$11,000", source:"NYC/DC program budget benchmarks", confidence:"High"},
+      {name:"Kindergarten readiness gain", value:"0.20 SD", source:"Mixed early-childhood literature (Perry Preschool vs. TN Pre-K)", confidence:"Low"}
+    ]
+  },
+  "Healthcare Access Expansion": {
+    cost:{level:"Medium", reason:"Subsidy cost per newly insured person is based on real marketplace subsidy data, but enrollment response is uncertain."},
+    rev:{level:"Medium", reason:"Offset savings from reduced uncompensated care are documented but vary by region and hospital mix."},
+    sources:["KFF","CBO"],
+    assumptions:[
+      {name:"Uninsured rate", value:"8%", source:"KFF national uninsured-rate tracking", confidence:"High"},
+      {name:"Coverage gain among uninsured", value:"65%", source:"ACA marketplace expansion experience", confidence:"Medium"},
+      {name:"Subsidy cost per newly insured", value:"$6,800/yr", source:"KFF/CBO marketplace subsidy estimates", confidence:"Medium"},
+      {name:"ER/hospital offset savings per insured", value:"$900/yr", source:"Commonwealth Fund uncompensated-care studies", confidence:"Medium"}
+    ]
+  },
+  "Carbon Tax": {
+    cost:{level:"High", reason:"The dividend payout is a direct, mechanical share of collected revenue — not an estimate."},
+    rev:{level:"High", reason:"Gross revenue is a direct multiplication of a chosen price and documented per-capita emissions."},
+    sources:["EPA","NBER"],
+    assumptions:[
+      {name:"Carbon price", value:"$50/ton CO2", source:"Common starting policy benchmark (e.g. RGGI-adjacent proposals)", confidence:"High"},
+      {name:"Tons CO2 per capita/yr", value:"14.0", source:"EPA national per-capita emissions data", confidence:"High"},
+      {name:"Emissions reduction elasticity", value:"−0.25 per 100% price increase", source:"Environmental economics literature (contested range)", confidence:"Low"},
+      {name:"Dividend rebate share", value:"70%", source:"Editable policy-design choice", confidence:"High"}
+    ]
+  },
+  "Police Staffing & Public Safety": {
+    cost:{level:"High", reason:"Fully-loaded officer cost is based on real municipal budget data."},
+    rev:{level:"High", reason:"No revenue is modeled for this mechanism."},
+    sources:["BLS","FBI CDE"],
+    assumptions:[
+      {name:"New officers per 1,000 pop", value:"0.5", source:"Editable scenario input", confidence:"High"},
+      {name:"Fully loaded officer cost", value:"$165,000/yr", source:"Municipal budget benchmarks (salary+benefits+equipment+training)", confidence:"High"},
+      {name:"Crime-reduction elasticity per officer", value:"0.034 per officer/1,000", source:"Chalfin & McCrary (2018)", confidence:"Medium"}
+    ]
+  },
+  "Public Transit Expansion": {
+    cost:{level:"Low", reason:"U.S. transit capital projects have well-documented, large cost overruns; this is a planning-stage estimate."},
+    rev:{level:"Medium", reason:"Fare revenue assumes a standard fare and ridership level; actual ridership take-up is uncertain."},
+    sources:["DOT","MTA Open Data"],
+    assumptions:[
+      {name:"New service miles", value:"25", source:"Editable scenario input", confidence:"High"},
+      {name:"Capital cost per mile", value:"$45M", source:"Transit Costs Project (NYU Marron Institute) benchmark", confidence:"Low"},
+      {name:"Annual operating cost per mile", value:"$850,000", source:"National Transit Database averages", confidence:"Medium"},
+      {name:"Ridership increase", value:"18%", source:"Comparable new-line ridership studies", confidence:"Low"}
+    ]
+  },
+  "Tax Policy (Marginal Rate Change)": {
+    cost:{level:"High", reason:"No direct spending is modeled; this mechanism only models a revenue change."},
+    rev:{level:"Low", reason:"The elasticity of taxable income for top earners is one of the most contested numbers in public finance."},
+    sources:["CBO","NBER"],
+    assumptions:[
+      {name:"Rate change", value:"+3.0 pp", source:"Editable scenario input", confidence:"High"},
+      {name:"Affected taxpayer share", value:"2%", source:"IRS Statistics of Income, top-bracket share", confidence:"Medium"},
+      {name:"Avg. taxable income (affected group)", value:"$650,000", source:"IRS SOI top-decile averages", confidence:"Medium"},
+      {name:"Elasticity of taxable income (ETI)", value:"0.25", source:"Contested range (Saez/Piketty vs. Feldstein-style estimates)", confidence:"Low"}
+    ]
+  },
+  "Government Grants & Subsidies Program": {
+    cost:{level:"High", reason:"This is a direct, chosen program budget, not an estimate."},
+    rev:{level:"Low", reason:"Deadweight loss (subsidizing activity that would've happened anyway) is notoriously hard to measure for any real program."},
+    sources:["GAO","Urban Institute"],
+    assumptions:[
+      {name:"Budget per capita", value:"$35/yr", source:"Editable scenario input", confidence:"High"},
+      {name:"Private capital leveraged per public $", value:"2.5×", source:"Typical economic-development program ratios", confidence:"Low"},
+      {name:"Jobs supported per $1M spent", value:"9", source:"State/local economic development program evaluations", confidence:"Low"},
+      {name:"Deadweight loss share", value:"20%", source:"GAO/Urban Institute subsidy program evaluations", confidence:"Low"}
+    ]
+  },
+  "Mental Health Services & Crisis Lines": {
+    cost:{level:"High", reason:"Per-capita program cost is a direct, chosen budget figure."},
+    rev:{level:"Medium", reason:"Diversion savings are documented in early 988/co-responder evaluations, but vary by jurisdiction maturity."},
+    sources:["KFF","CDC"],
+    assumptions:[
+      {name:"Annual cost per capita", value:"$18", source:"Editable scenario input", confidence:"High"},
+      {name:"Crisis calls per 1,000 pop/yr", value:"22", source:"988 Lifeline rollout call-volume data", confidence:"Medium"},
+      {name:"Diversion from ER/jail", value:"35%", source:"SAMHSA co-responder program evaluations", confidence:"Medium"},
+      {name:"Avg. ER/jail cost avoided", value:"$1,800", source:"SAMHSA cost-offset studies", confidence:"Medium"}
+    ]
+  },
+  "First-Time Homebuyer Incentives": {
+    cost:{level:"High", reason:"Assistance amount and uptake are direct, chosen program parameters."},
+    rev:{level:"Low", reason:"Transfer-tax feedback is a small, modeled side effect, not a primary revenue source."},
+    sources:["HUD","Census / ACS"],
+    assumptions:[
+      {name:"Eligible buyers per 1,000 pop/yr", value:"3.0", source:"Editable scenario input", confidence:"Medium"},
+      {name:"Assistance amount", value:"$15,000", source:"Comparable to SONYMA DPAL cap", confidence:"High"},
+      {name:"Uptake rate", value:"60%", source:"Comparable state DPA program participation", confidence:"Low"}
+    ]
+  },
+  "Campaign Finance & Lobbying Reform": {
+    cost:{level:"Medium", reason:"Matching-fund cost scales with real small-donor data, but actual donor behavior under a new system is uncertain."},
+    rev:{level:"High", reason:"No revenue is modeled for this mechanism."},
+    sources:["FEC","OpenSecrets"],
+    assumptions:[
+      {name:"Public match rate", value:"6:1", source:"NYC Campaign Finance Board model", confidence:"High"},
+      {name:"Admin cost per candidate", value:"$25,000", source:"NYC CFB program administration data", confidence:"Medium"},
+      {name:"Candidates per million pop", value:"8", source:"Comparable municipal election filing rates", confidence:"Low"}
+    ]
+  },
+  "Surveillance Policy (LPR & Traffic Cameras)": {
+    cost:{level:"Medium", reason:"Equipment and maintenance costs are vendor-documented; deployment density is a policy choice."},
+    rev:{level:"Low", reason:"Violation revenue depends heavily on enforcement policy and is often legally capped or contested."},
+    sources:["FBI CDE","DOT"],
+    assumptions:[
+      {name:"Cameras per 100,000 pop", value:"25", source:"Editable scenario input", confidence:"Medium"},
+      {name:"Install cost per camera", value:"$12,000", source:"Municipal procurement data", confidence:"Medium"},
+      {name:"Crime clearance improvement", value:"6%", source:"Mixed LPR effectiveness studies", confidence:"Low"}
+    ]
+  }
+};
+
+const MECH_META = {
+  cash:{
+    cost:{level:"High", reason:"Total budget disbursed is a direct, chosen figure, not an estimate."},
+    rev:{level:"Low", reason:"Transfer-tax feedback is a small modeled side effect."},
+    sources:["Census / ACS","HUD"],
+    assumptions:[
+      {name:"Total program budget", source:"User-chosen scenario input", confidence:"High"},
+      {name:"Assistance per recipient", source:"User-chosen scenario input", confidence:"High"},
+      {name:"Avg. purchase price (leverage calc)", source:"Regional home-price benchmark, user-edited", confidence:"Medium"}
+    ]
+  },
+  leave:{
+    cost:{level:"Medium", reason:"Scales with real wage data; claimant uptake rate is the most uncertain input."},
+    rev:{level:"High", reason:"Payroll tax revenue is a direct rate against a known wage base."},
+    sources:["BLS","DOL"],
+    assumptions:[
+      {name:"Weeks of leave", source:"User-chosen, comparable to state PFL programs", confidence:"High"},
+      {name:"Wage replacement rate", source:"User-chosen, comparable to NY PFL design", confidence:"High"},
+      {name:"Eligible workforce share", source:"User-chosen scenario input", confidence:"Medium"},
+      {name:"Average annual wage", source:"BLS national average wage", confidence:"High"},
+      {name:"Funding payroll tax rate", source:"Comparable to existing state PFL tax rates", confidence:"Medium"}
+    ]
+  },
+  service:{
+    cost:{level:"Medium", reason:"Per-participant cost is program-specific; uptake among eligible population is uncertain."},
+    rev:{level:"Low", reason:"Tax-base offset from outcomes is a small modeled estimate."},
+    sources:["Census / ACS","Dept. of Education"],
+    assumptions:[
+      {name:"Cost per participant/yr", source:"User-chosen, comparable to real program benchmarks", confidence:"Medium"},
+      {name:"Eligible population per 1,000", source:"Census/ACS age/need-distribution data", confidence:"High"},
+      {name:"Uptake / enrollment rate", source:"Comparable program enrollment experience", confidence:"Medium"}
+    ]
+  },
+  staffing:{
+    cost:{level:"High", reason:"Fully-loaded staffing cost is based on real public-sector compensation data."},
+    rev:{level:"High", reason:"No revenue is modeled for staffing increases."},
+    sources:["BLS"],
+    assumptions:[
+      {name:"New staff per 1,000 pop", source:"User-chosen scenario input", confidence:"High"},
+      {name:"Fully loaded cost per staff member", source:"Public-sector compensation benchmarks", confidence:"High"}
+    ]
+  },
+  tax:{
+    cost:{level:"High", reason:"No direct spending is modeled; this mechanism only models a revenue change."},
+    rev:{level:"Low", reason:"The elasticity of taxable income is genuinely contested in the public-finance literature."},
+    sources:["CBO","NBER"],
+    assumptions:[
+      {name:"Rate change (pp)", source:"User-chosen scenario input", confidence:"High"},
+      {name:"Share of population affected", source:"IRS Statistics of Income-style benchmark", confidence:"Medium"},
+      {name:"Avg. taxable amount (affected group)", source:"IRS SOI-style benchmark", confidence:"Medium"},
+      {name:"Elasticity of taxable income", source:"Contested public-finance literature range", confidence:"Low"}
+    ]
+  },
+  externality:{
+    cost:{level:"High", reason:"The rebate/dividend is a mechanical share of collected revenue."},
+    rev:{level:"High", reason:"Gross revenue is a direct multiplication of price × documented usage."},
+    sources:["EPA","NBER"],
+    assumptions:[
+      {name:"Price per unit", source:"User-chosen policy benchmark", confidence:"High"},
+      {name:"Units per capita/yr", source:"EPA/CDC-style usage data, varies by externality", confidence:"Medium"},
+      {name:"Rebate share to households", source:"User-chosen policy design", confidence:"High"}
+    ]
+  },
+  subsidy:{
+    cost:{level:"High", reason:"This is a direct, chosen program budget."},
+    rev:{level:"Low", reason:"Deadweight loss is notoriously hard to measure for any real subsidy program."},
+    sources:["GAO","Urban Institute"],
+    assumptions:[
+      {name:"Total annual program budget", source:"User-chosen scenario input", confidence:"High"},
+      {name:"Private capital leveraged per public $", source:"Typical economic-development program ratios", confidence:"Low"},
+      {name:"Jobs supported per $1M spent", source:"State/local program evaluations", confidence:"Low"},
+      {name:"Deadweight loss share", source:"GAO/Urban Institute subsidy evaluations", confidence:"Low"}
+    ]
+  },
+  infrastructure:{
+    cost:{level:"Low", reason:"U.S. capital infrastructure projects have well-documented, large cost overruns at the planning stage."},
+    rev:{level:"Medium", reason:"Usage-based revenue assumes a standard fee and adoption level."},
+    sources:["DOT","MTA Open Data"],
+    assumptions:[
+      {name:"Total capital cost", source:"User-chosen scenario input", confidence:"Low"},
+      {name:"Annual operating cost", source:"National Transit Database-style benchmark", confidence:"Medium"},
+      {name:"Projected annual users", source:"Comparable project ridership/usage studies", confidence:"Low"},
+      {name:"Revenue per user/yr", source:"User-chosen fee/fare schedule", confidence:"Medium"}
+    ]
+  },
+  insurance:{
+    cost:{level:"Medium", reason:"Subsidy cost is based on real marketplace data; enrollment response is uncertain."},
+    rev:{level:"Medium", reason:"Offset savings are documented but vary by region and provider mix."},
+    sources:["KFF","CBO"],
+    assumptions:[
+      {name:"Uncovered population share", source:"KFF/Census coverage tracking", confidence:"High"},
+      {name:"Coverage gain among uncovered", source:"ACA-era marketplace expansion experience", confidence:"Medium"},
+      {name:"Subsidy cost per newly covered", source:"KFF/CBO marketplace subsidy estimates", confidence:"Medium"},
+      {name:"Offset savings per newly covered", source:"Commonwealth Fund uncompensated-care studies", confidence:"Medium"}
+    ]
+  },
+  loanguarantee:{
+    cost:{level:"Medium", reason:"Expected default cost depends heavily on the economic cycle, which this model holds fixed."},
+    rev:{level:"High", reason:"Guarantee fee revenue is a direct, contractual rate against guaranteed volume."},
+    sources:["GAO","BLS"],
+    assumptions:[
+      {name:"Guaranteed loan volume", source:"User-chosen scenario input", confidence:"High"},
+      {name:"Assumed default rate", source:"SBA-style historical default-rate benchmark", confidence:"Medium"},
+      {name:"Guarantee fee rate", source:"SBA-style guarantee fee schedule", confidence:"High"}
+    ]
+  },
+  regulatory:{
+    cost:{level:"Medium", reason:"Admin cost changes are based on comparable streamlining studies; results vary by jurisdiction."},
+    rev:{level:"High", reason:"No direct revenue is modeled for this mechanism."},
+    sources:["GAO","Urban Institute"],
+    assumptions:[
+      {name:"Entities/individuals affected", source:"User-chosen scenario input", confidence:"Medium"},
+      {name:"Compliance cost change per entity", source:"Regulatory-cost streamlining studies", confidence:"Low"},
+      {name:"Government admin cost change", source:"Comparable permitting-reform case studies", confidence:"Low"}
+    ]
+  }
+};
+
+function renderLedger(containerId, state){
+  const net = state.rev - state.cost;
+  const fundingHTML = state.fundingNote ? `
+    <div class="funding-note"><b>${state.fundingNote.title}</b>${state.fundingNote.text}</div>` : '';
+
+  const genericStatFallback = "Specific to this scenario's inputs — see the assumption table below for the underlying figures and sources.";
+  const statsHTML = state.stats.map(([lbl,val,explain]) =>
+    `<div class="stat"><div class="lbl">${lbl} <details class="info-details"><summary class="info-icon" aria-label="What does this mean?">ⓘ</summary><p class="info-text">${explain || genericStatFallback}</p></details></div><div class="val">${val}</div></div>`
+  ).join('');
+
+  const costPC = (Math.max(0,state.cost)/state.pop)*1000;
+  const benefitPC = (Math.max(0,state.rev)/state.pop)*1000;
+  const scored = scorePolitical(state.priors, costPC, benefitPC, state.difficulty);
+  const riskLabel = scored.risk.charAt(0).toUpperCase() + scored.risk.slice(1);
+
+  const p = state.partisan;
+  const meta = state.meta || null;
+
+  // Generic, model-agnostic definitions of what each metric actually means —
+  // separate from the context-specific footnote, which explains THIS number;
+  // this explains the METRIC, the same way every time, on every tab.
+  const METRIC_DEFS = {
+    cost: "Estimated cost to government under the assumptions you've selected — program administration, direct expenditures, and (where the mechanism models it) amortized capital costs. Does not include broader macroeconomic spillover effects unless that mechanism explicitly models them.",
+    rev: "Money the program brings in or saves government — new tax/fee revenue, or cost-offsets from reduced downstream spending (e.g. avoided ER visits, avoided jail bookings). Not a measure of broader economic activity generated by the program.",
+    net: "Revenue/offset minus government cost, for one year, at full implementation. Does not include financing costs (e.g. bond interest, if you selected debt funding) unless shown separately, and does not discount or compound across years.",
+    support: "A 0–100 heuristic score per coalition, built from this mechanism's baseline political priors and adjusted by cost-per-capita, benefit-per-capita, and implementation difficulty. This is a structured guess for comparing relative feasibility — not a poll, and not a prediction.",
+    polarization: "The spread between the highest- and lowest-scoring coalition. Higher means the three coalitions disagree more sharply about this specific scenario."
+  };
+  const infoIcon = (key) => `<details class="info-details"><summary class="info-icon" aria-label="What does this mean?">ⓘ</summary><p class="info-text">${METRIC_DEFS[key]}</p></details>`;
+  const confBadge = (c) => c ? `<details class="conf-details"><summary class="conf-badge conf-${c.level.toLowerCase()}">Confidence: ${c.level}</summary><p class="conf-reason">${c.reason}</p></details>` : '';
+  const sourceTagsHTML = (meta && meta.sources) ? `
+    <div class="source-tags">${meta.sources.map(s => `<a href="#src-${s.replace(/[^a-zA-Z]/g,'').toLowerCase()}" class="source-tag">${s}</a>`).join('')}</div>` : '';
+  const assumptionTableHTML = (meta && meta.assumptions && meta.assumptions.length) ? `
+    <details class="extra-panel assumption-details">
+      <summary><h3 style="display:inline;">Assumption table</h3> <span class="assumption-count">(${meta.assumptions.length} assumptions — click to expand)</span></summary>
+      <table class="assumption-table">
+        <thead><tr><th>Assumption</th><th>Value</th><th>Source</th><th>Confidence</th></tr></thead>
+        <tbody>
+          ${meta.assumptions.map(a => `<tr><td>${a.name}</td><td>${a.value!==undefined?a.value:'—'}</td><td>${a.source}</td><td><span class="conf-pill conf-${a.confidence.toLowerCase()}">${a.confidence}</span></td></tr>`).join('')}
+        </tbody>
+      </table>
+    </details>` : '';
+
+  const extraPanelsHTML = (state.extraPanels || []).map(panel => `
+    <div class="extra-panel">
+      <h3>${panel.title}</h3>
+      <div class="extra-rows">
+        ${panel.rows.map(([l,v]) => `<div class="extra-row"><span class="erl">${l}</span><span class="erv">${v}</span></div>`).join('')}
+      </div>
+      ${panel.note ? `<p style="font-size:12.5px;color:var(--ink-soft);margin-top:12px;line-height:1.5;">${panel.note}</p>` : ''}
+    </div>`).join('');
+
+  document.getElementById(containerId).innerHTML = `
+    <div class="ledger">
+      <div class="ledger-head">
+        <h2>${state.title}</h2>
+        <span class="area-tag">${state.geoTag}</span>
+      </div>
+      ${sourceTagsHTML}
+      ${fundingHTML}
+      <div class="ledger-grid">
+        <div class="ledger-cell">
+          <div class="lbl">Annual government cost ${infoIcon('cost')}</div>
+          <div class="num cost">${fmtUSD(state.cost)}</div>
+          <div class="footnote">${state.costNote}</div>
+          ${meta ? confBadge(meta.cost) : ''}
+        </div>
+        <div class="ledger-cell">
+          <div class="lbl">Annual revenue / offset ${infoIcon('rev')}</div>
+          <div class="num rev">${fmtUSD(state.rev)}</div>
+          <div class="footnote">${state.revNote}</div>
+          ${meta ? confBadge(meta.rev) : ''}
+        </div>
+        <div class="ledger-cell">
+          <div class="lbl">Net annual fiscal effect ${infoIcon('net')}</div>
+          <div class="num ${net>=0?'rev':'cost'}">${(net>=0?'+':'')}${fmtUSD(net)}</div>
+          <div class="footnote">Per year, before inflation/phase-in adjustments.</div>
+        </div>
+      </div>
+      <div class="stat-strip">${statsHTML}</div>
+      <div class="beam-wrap">
+        <div class="lbl">Estimated political support, by coalition (0–100) ${infoIcon('support')}</div>
+        <div class="beam-track">
+          <div class="beam-fulcrum"></div>
+          <div class="beam-tick" style="background:var(--slate); left:${scored.leftScore}%">P</div>
+          <div class="beam-tick" style="background:var(--brick); left:${scored.rightScore}%">C</div>
+          <div class="beam-tick" style="background:var(--brass); left:${scored.libScore}%">L</div>
+        </div>
+        <div class="beam-legend"><span>0 — opposed</span><span>100 — supportive</span></div>
+        <div style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <span class="badge ${scored.risk}">Messaging risk: ${riskLabel}</span>
+          <span style="font-size:12.5px; color:var(--ink-soft);">Polarization index: ${scored.polarization.toFixed(1)} / 100</span>
+          ${infoIcon('polarization')}
+        </div>
+      </div>
+      <div class="partisan-shell">
+        <div class="partisan-grid">
+          <div class="pcard prog"><h4>Progressive</h4>
+            <p><b>For</b><span>${p.progFor}</span></p>
+            <p><b>Concern</b><span>${p.progAgainst}</span></p>
+          </div>
+          <div class="pcard cons"><h4>Conservative</h4>
+            <p><b>For</b><span>${p.consFor}</span></p>
+            <p><b>Concern</b><span>${p.consAgainst}</span></p>
+          </div>
+          <div class="pcard lib"><h4>Libertarian</h4>
+            <p><b>For</b><span>${p.libFor}</span></p>
+            <p><b>Concern</b><span>${p.libAgainst}</span></p>
+          </div>
+        </div>
+        <div class="moderate-row"><b>Moderate / technocratic read</b><span>${p.moderate}</span></div>
+        <div class="groups-row">
+          <div><b>Likely to support</b><span>${p.support}</span></div>
+          <div><b>Likely to oppose</b><span>${p.oppose}</span></div>
+        </div>
+      </div>
+      ${assumptionTableHTML}
+      ${extraPanelsHTML}
+    </div>`;
+}
+
+/* =================================================================
+   TAB SWITCHING
+   ================================================================= */
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+document.getElementById('changelogToggle').addEventListener('click', () => {
+  document.getElementById('changelogPanel').classList.toggle('open');
+});
+
+document.getElementById('runPFLScenario').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.tabbtn[data-tab="builder"]').classList.add('active');
+  document.getElementById('panel-builder').classList.add('active');
+  exampleSelect.value = "paid_leave";
+  exampleSelect.dispatchEvent(new Event('change'));
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+// Source tags inside ledger results link to anchors inside the (currently hidden) Sources tab.
+// Intercept the click: switch to that tab first, then scroll the target into view.
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('.source-tag');
+  if (!link) return;
+  e.preventDefault();
+  const id = link.getAttribute('href').slice(1);
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.tabbtn[data-tab="sources"]').classList.add('active');
+  document.getElementById('panel-sources').classList.add('active');
+  const target = document.getElementById(id);
+  if (target) setTimeout(() => target.scrollIntoView({behavior:'smooth', block:'center'}), 30);
+});
+
+
+
+/* =================================================================
+   TAB 1 — NATIONAL POLICY LIBRARY  (15 fixed, nationally-calibrated models)
+   ================================================================= */
+const POLICIES = {
+  "Housing Supply & Zoning Reform": { priors:[62,45,55],
+    calc(pop, years){
+      const a = { newUnitsPer1000:4.0, unitCost:280000, permitSavingsPct:0.30, rentElastic:0.03 };
+      const totalUnits = (pop/1000)*a.newUnitsPer1000*years;
+      const supplyPct = (totalUnits/Math.max(1,pop/2.4))*100;
+      const cost = -(totalUnits*1500*a.permitSavingsPct)/years;
+      const rev = (totalUnits*a.unitCost*0.012)/years;
+      const rentChange = -(supplyPct/10)*a.rentElastic*100;
+      return {cost, rev, difficulty:0.35,
+        stats:[["New units enabled", fmtNum(totalUnits), "Total new housing units this reform is estimated to enable over the full time horizon, based on the per-1,000-population unit rate (editable in the assumption table)."],["Est. rent change", rentChange.toFixed(2)+"%", "Modeled rent change from the added supply, using a standard housing-supply elasticity relationship: more supply, lower prices, all else equal."],["Construction jobs", fmtNum(totalUnits*1.4), "Rough construction-sector jobs supported, estimated at 1.4 jobs per new unit built."]],
+        costNote:"Negative = net administrative savings from streamlined permitting.", revNote:"New property tax revenue from added units."};
+    },
+    partisan:{progFor:"Increases affordable supply and fights exclusionary zoning rooted in segregationist history.",progAgainst:"Risk of displacement and gentrification without strong tenant protections.",consFor:"Reduces regulatory burden, expands property rights, lets markets build housing.",consAgainst:"Concern about local control being overridden by state/federal mandates.",libFor:"Strongly favored: removes government-imposed supply restrictions.",libAgainst:"Skeptical of any subsidy or inclusionary mandates layered on top.",moderate:"Broad economist consensus that supply constraints drive affordability problems; anti-displacement design determines political durability.",support:"YIMBY advocates, builders/developers, renters, some libertarians.",oppose:"Homeowner associations, local-control conservatives, slow-growth progressives."}
+  },
+  "Paid Family & Maternity Leave": { priors:[78,48,35],
+    calc(pop, years){
+      const a = { weeks:12, wageReplace:0.66, eligiblePct:0.55, avgWage:62000, payrollTax:0.004, adminPerEmp:120 };
+      const workforce = pop*0.62;
+      const claimants = workforce*a.eligiblePct*0.12;
+      const benefitCost = claimants*a.weeks*(a.avgWage/52)*a.wageReplace;
+      const taxRev = workforce*a.avgWage*a.payrollTax;
+      return {cost: benefitCost + claimants*a.adminPerEmp*0.3, rev: taxRev, difficulty:0.3,
+        stats:[["Workers covered/yr", fmtNum(claimants), "Estimated number of workers filing a paid-leave claim in a given year, based on the eligible workforce share and a typical claim-rate assumption."],["Maternal LFP increase", "+8.5%", "Estimated increase in maternal labor-force participation associated with paid-leave access, drawn from state PFL program research (CA/NJ/RI)."],["Small biz burden", fmtUSD(claimants*a.adminPerEmp*0.7), "Estimated share of employer administrative cost borne specifically by small businesses, as opposed to larger employers."]],
+        costNote:"Wage-replacement payouts plus a share of employer admin cost.", revNote:"Dedicated payroll-tax revenue funding the program."};
+    },
+    partisan:{progFor:"Closes a major gap vs. peer nations; supports working families and gender equity.",progAgainst:"Wage replacement or duration may still be too low for low-income workers to take leave.",consFor:"Family-policy conservatives support it as pro-family; some prefer employer tax credits.",consAgainst:"New payroll tax and program bureaucracy; concern about expanding entitlements.",libFor:"Recognizes employer demand for competitive benefits could meet this without mandates.",libAgainst:"Opposes mandatory payroll tax and government-run benefit administration.",moderate:"Polls show bipartisan support for some paid leave; the fight is over financing mechanism, not the goal.",support:"Working parents, women's groups, suburban swing voters.",oppose:"Anti-tax conservatives, some small-business associations, fiscal hawks."}
+  },
+  "Immigration Policy (Legal Admission Levels)": { priors:[58,35,50],
+    calc(pop, years){
+      const a = { admPer100k:250, lfpRate:0.68, contribPerWorker:9500, processingCost:1800 };
+      const annualAdm = (pop/100000)*a.admPer100k;
+      const newWorkers = annualAdm*years*a.lfpRate;
+      return {cost: annualAdm*a.processingCost, rev: (newWorkers/years)*a.contribPerWorker, difficulty:0.55,
+        stats:[["New workers, total", fmtNum(newWorkers), "Total new workers entering the labor force over the full time horizon, based on the admissions rate and labor-force participation assumptions."],["Annual GDP contribution", fmtUSD((newWorkers/years)*55000), "Rough annual economic output added by these new workers, using a standard per-worker GDP contribution estimate."],["Local wage effect (low-skill)", "-0.4%", "Estimated short-run wage effect on local low-skill native workers — small and genuinely contested in the economics literature; shown here as an illustrative midpoint."]],
+        costNote:"Visa/admission processing costs.", revNote:"Net annual fiscal contribution, NAS/CBO-style estimate."};
+    },
+    partisan:{progFor:"Supports family reunification, humanitarian commitments, and economic contributions.",progAgainst:"Enforcement-focused versions may neglect due process or detention conditions.",consFor:"Merit/skills-based expansion can address labor shortages and support growth.",consAgainst:"Concern about service strain, wage effects on low-skill native workers, border sequencing.",libFor:"Generally favors expanded legal immigration as net economic positive.",libAgainst:"Wary of new bureaucratic processing apparatus and benefit eligibility rules.",moderate:"NAS 2016 and CBO analyses find net positive long-run fiscal/GDP effects, with small concentrated short-run wage effects.",support:"Business/agriculture/tech groups, immigrant communities, many economists.",oppose:"Restrictionist conservatives, some unions concerned about wage competition."}
+  },
+  "K-12 Education Funding Increase": { priors:[72,50,40],
+    calc(pop, years){
+      const a = { perPupilIncrease:1200, studentsPer1000:130, gainPer1000:0.015 };
+      const students = (pop/1000)*a.studentsPer1000;
+      const totalIncrease = students*a.perPupilIncrease;
+      const gain = (a.perPupilIncrease/1000)*a.gainPer1000;
+      return {cost: totalIncrease, rev: 0, difficulty:0.25,
+        stats:[["Students affected", fmtNum(students), "Number of enrolled students covered by this funding increase, based on the school-age share of the population you've selected."],["Test score gain (SD)", gain.toFixed(4), "Estimated achievement gain in standard deviations, using a per-$1,000-spent effect size from education-spending research (Jackson, Johnson & Persico 2016)."],["Teachers hired", fmtNum(totalIncrease/75000), "Rough number of new teaching positions this funding increase could support, at an average fully-loaded salary of $75,000."]],
+        costNote:"Per-pupil funding increase across the modeled population.", revNote:"Funded via property tax + state aid; no new revenue modeled."};
+    },
+    partisan:{progFor:"Addresses funding inequities between districts; targeted spending boosts outcomes for disadvantaged students.",progAgainst:"Funding alone doesn't fix inequities without governance/distribution reform.",consFor:"Some support targeted, outcomes-tied increases (STEM, career-tech).",consAgainst:"Skepticism spending alone improves outcomes; preference for school choice.",libFor:"Minimal — prefers funding follow the student via vouchers/ESAs.",libAgainst:"Opposes property tax increases and growth of education bureaucracy.",moderate:"Causal evidence (Jackson, Johnson & Persico 2016) shows real spending increases help low-income students, with modest effect sizes.",support:"Teachers unions, parents in underfunded districts, many Democrats.",oppose:"Anti-tax conservatives, school-choice advocates, libertarians."}
+  },
+  "Universal Pre-K": { priors:[74,42,30],
+    calc(pop, years){
+      const a = { fourYrPer1000:12, uptake:0.75, costPerChild:11000 };
+      const enrolled = (pop/1000)*a.fourYrPer1000*a.uptake;
+      const cost = enrolled*a.costPerChild;
+      return {cost, rev: cost*0.08, difficulty:0.3,
+        stats:[["Children served", fmtNum(enrolled), "Number of 4-year-olds enrolled, based on the eligible population and the enrollment uptake rate (editable in the assumption table)."],["Kindergarten readiness gain", "0.20 SD", "Estimated school-readiness improvement in standard deviations — early-childhood research on this figure is genuinely mixed (see Limitations)."],["Maternal LFP increase", "+6.0%", "Estimated increase in maternal workforce participation once childcare costs drop for enrolled families."]],
+        costNote:"Annual cost per enrolled child, NYC/DC-style program benchmark.", revNote:"Modest tax-base offset from parental workforce participation."};
+    },
+    partisan:{progFor:"Reduces childcare costs, boosts maternal workforce participation, narrows readiness gaps.",progAgainst:"Risk of crowding out high-quality existing Head Start/nonprofit providers.",consFor:"Some support means-tested or local-control versions tied to workforce goals.",consAgainst:"Cost concerns; mixed long-run evidence (e.g. Tennessee Pre-K fade-out).",libFor:"Minimal; prefers tax credits or vouchers over a universal program.",libAgainst:"Opposes a government-run universal program funded by broad taxation.",moderate:"Evidence is genuinely mixed across studies; program quality likely matters more than universality itself.",support:"Working parents, early-childhood educators, Democratic-leaning families.",oppose:"Fiscal conservatives, stay-at-home-parent advocates, some private preschools."}
+  },
+  "Healthcare Access Expansion": { priors:[75,38,32],
+    calc(pop, years){
+      const a = { uninsuredRate:0.08, coverageGain:0.65, subsidyCost:6800, erOffset:900 };
+      const newlyInsured = pop*a.uninsuredRate*a.coverageGain;
+      return {cost: newlyInsured*a.subsidyCost, rev: newlyInsured*a.erOffset, difficulty:0.45,
+        stats:[["People newly covered", fmtNum(newlyInsured), "Number of previously-uninsured people gaining coverage, based on the uninsured rate and coverage-gain assumptions."],["Preventable hosp. avoided", fmtNum(newlyInsured*0.12*0.05), "Rough estimate of preventable hospitalizations avoided due to expanded access to regular care."],["Medical bankruptcy reduction", "−18%", "Estimated reduction in medical-debt-driven bankruptcy among the newly covered population, from coverage-expansion research."]],
+        costNote:"Subsidy/marketplace cost per newly insured person.", revNote:"Offsetting savings from reduced uncompensated ER/hospital use."};
+    },
+    partisan:{progFor:"Closes coverage gaps, reduces medical debt and bankruptcy, viewed as a basic right.",progAgainst:"Subsidy/marketplace models leave some underinsured vs. single-payer alternatives.",consFor:"Some support market-based expansion (HSAs, price transparency) over subsidies.",consAgainst:"Cost concerns, opposition to mandate-style structures, preference for state flexibility.",libFor:"Prefers deregulation (interstate sales, scope-of-practice reform) over new subsidies.",libAgainst:"Opposes subsidy expansion and any individual/employer mandate.",moderate:"KFF/Commonwealth Fund tracking shows subsidy expansions reliably cut uninsured rates; the fight is over financing, not the goal.",support:"Low/middle-income uninsured, hospitals/providers, most Democrats.",oppose:"Fiscal conservatives, some small businesses fearing mandate costs."}
+  },
+  "Carbon Tax": { priors:[68,28,30],
+    calc(pop, years){
+      const a = { pricePerTon:50, tonsPerCapita:14.0, dividendShare:0.70 };
+      const grossRev = pop*a.tonsPerCapita*a.pricePerTon;
+      const dividend = grossRev*a.dividendShare;
+      return {cost: dividend, rev: grossRev, difficulty:0.6,
+        stats:[["Emissions reduction", (0.25*(a.pricePerTon/50)*100).toFixed(1)+"%", "Estimated reduction in CO2 emissions from the price signal, using a standard price-elasticity relationship — genuinely contested in the environmental-economics literature."],["Per-household dividend/yr", fmtUSD(dividend/Math.max(1,pop/2.4)), "Average household's share of the rebated revenue per year, assuming an equal per-household dividend."],["Energy-intensive burden index", "0.18", "A 0–1 heuristic indicating how concentrated the cost burden is on energy-intensive industries specifically."]],
+        costNote:"Dividend/rebate paid back to households — shown as a 'cost' to government.", revNote:"Gross carbon-price revenue collected before rebate."};
+    },
+    partisan:{progFor:"Prices in the carbon externality, funds mitigation/dividends — a market tool many economists favor.",progAgainst:"Some prefer direct regulation/investment over a mechanism that can feel regressive without strong rebates.",consFor:"Revenue-neutral carbon pricing has drawn some conservative-economist support as a regulation substitute.",consAgainst:"Most elected Republicans oppose new taxes; concern about energy costs/competitiveness.",libFor:"Pigouvian framing (pricing externalities) is more market-consistent than direct regulation for some libertarians.",libAgainst:"Many oppose new taxes on principle or doubt government's role in pricing the externality.",moderate:"Economist consensus favors carbon pricing as more efficient than command-and-control, but U.S. political viability has been very low vs. other OECD countries.",support:"Environmental groups, some economists, dividend-receiving lower-income households.",oppose:"Fossil fuel industry, energy-intensive manufacturers, most Republican officeholders."}
+  },
+  "Police Staffing & Public Safety": { priors:[45,72,55],
+    calc(pop, years){
+      const a = { officersPer1000:0.5, officerCost:165000, crimeElastic:0.034 };
+      const newOfficers = (pop/1000)*a.officersPer1000;
+      return {cost: newOfficers*a.officerCost, rev: 0, difficulty:0.2,
+        stats:[["New officers hired", fmtNum(newOfficers), "Number of new officers this staffing increase funds, based on the officers-per-1,000-residents rate."],["Violent crime reduction", (a.officersPer1000*a.crimeElastic*100).toFixed(2)+"%", "Estimated violent crime reduction from added staffing, using a per-officer crime elasticity from the empirical policing literature (Chalfin & McCrary)."],["Community trust index Δ", "−0.05", "A heuristic, context-dependent estimate — actual community-trust effects depend heavily on deployment strategy and accountability measures, not headcount alone."]],
+        costNote:"Fully loaded cost per officer (salary, benefits, equipment, training).", revNote:"No direct revenue effect modeled for staffing increases."};
+    },
+    partisan:{progFor:"Some support targeted staffing paired with reform (de-escalation training, civilian oversight).",progAgainst:"Concern about over-policing and disparate impact; preference for root-cause investment instead.",consFor:"Strong support: more officers as the most direct, proven lever to reduce violent crime.",consAgainst:"Minimal — mainly union contract or budget tradeoff concerns.",libFor:"Supports the core public-safety function as a legitimate government role.",libAgainst:"Concern about expanded enforcement of low-level laws and surveillance creep alongside staffing.",moderate:"Research (Chalfin & McCrary) broadly supports staffing reducing violent crime, but effects depend heavily on deployment strategy and accountability.",support:"Law enforcement unions, business groups, crime-concerned voters.",oppose:"Police-reform advocates, some communities with strained police relations."}
+  },
+  "Public Transit Expansion": { priors:[70,40,35],
+    calc(pop, years){
+      const a = { milesNew:25, capitalPerMile:45000000, opPerMile:850000, ridershipIncrease:0.18 };
+      const capitalCost = a.milesNew*a.capitalPerMile;
+      const newRiders = pop*0.04*a.ridershipIncrease;
+      return {cost: capitalCost/years + a.milesNew*a.opPerMile, rev: newRiders*2.75*250, difficulty:0.5,
+        stats:[["New annual riders", fmtNum(newRiders), "Estimated new annual ridership from the added service, based on a ridership-increase assumption applied to baseline ridership."],["VMT reduced/yr", fmtNum(newRiders*2400), "Vehicle-miles-traveled reduced per year as riders shift away from driving — used to estimate the project's emissions benefit."],["Construction jobs", fmtNum(capitalCost/130000), "Rough construction-sector jobs supported by the capital project, estimated at a standard cost-per-job ratio."]],
+        costNote:"Amortized capital cost plus annual operating cost for new service miles.", revNote:"Fare revenue from new ridership."};
+    },
+    partisan:{progFor:"Reduces emissions, expands mobility for non-car-owning and lower-income residents.",progAgainst:"Capital projects can displace residents/businesses and gentrify station areas without protections.",consFor:"Targeted, fiscally disciplined transit with strong ridership ROI can draw support in congested corridors.",consAgainst:"Skepticism of large capital outlays and chronic cost overruns; preference for road spending.",libFor:"Limited; might support if fare-funded rather than subsidized by general taxation.",libAgainst:"Opposes general-tax-funded transit subsidies; prefers market-based or congestion pricing.",moderate:"U.S. transit projects have well-documented cost-overrun problems; benefit-cost ratio depends on route/density, not transit per se.",support:"Urban Democrats, transit-dependent riders, environmental groups.",oppose:"Rural/exurban conservatives, anti-tax groups, drivers feeling road funds diverted."}
+  },
+  "Tax Policy (Marginal Rate Change)": { priors:[55,50,45],
+    calc(pop, years){
+      const a = { rateChangePP:3.0, affectedSharePct:0.02, avgIncome:650000, eti:0.25 };
+      const affected = pop*0.45*a.affectedSharePct;
+      const staticRev = affected*a.avgIncome*(a.rateChangePP/100);
+      const offset = staticRev*a.eti*(a.rateChangePP/10);
+      return {cost: 0, rev: staticRev-offset, difficulty:0.35,
+        stats:[["Taxpayers affected", fmtNum(affected), "Number of taxpayers in the affected income group, based on the population share you've selected."],["Static revenue estimate", fmtUSD(staticRev), "Revenue if no one changed their behavior in response to the rate change — the textbook 'static score'."],["Behavioral offset", fmtUSD(offset), "Revenue lost to behavioral response (e.g. income-shifting, reduced work), based on the elasticity of taxable income — the most contested number in this model."]],
+        costNote:"No direct spending line; this module models a revenue change.", revNote:"Dynamic estimate after behavioral response (elasticity of taxable income)."};
+    },
+    partisan:{progFor:"Funds public investment and reduces after-tax inequality; high-income ETI estimates are contested/likely overstated.",progAgainst:"Some prefer wealth/capital-gains-focused reform over ordinary income rate changes.",consFor:"Rate cuts are framed as pro-growth, reducing distortion of high marginal rates.",consAgainst:"Rate increases opposed as growth-dampening, likely to trigger avoidance behavior.",libFor:"Favors lower marginal rates generally as reducing government's claim on private income.",libAgainst:"Skeptical that revenue gains materialize once behavioral responses are accounted for.",moderate:"The elasticity of taxable income for top earners is genuinely contested in the public-finance literature — one of the most uncertain numbers in this simulator.",support:"(direction-dependent) progressive Democrats or business groups, mirrored by direction of change.",oppose:"Mirror image of supporting groups depending on direction."}
+  },
+  "Government Grants & Subsidies Program": { priors:[60,45,25],
+    calc(pop, years){
+      const a = { budgetPerCapita:35, leverageRatio:2.5, jobsPerMillion:9, deadweightPct:0.20 };
+      const budget = pop*a.budgetPerCapita;
+      const jobs = (budget/1000000)*a.jobsPerMillion*(1-a.deadweightPct);
+      return {cost: budget, rev: budget*0.06, difficulty:0.4,
+        stats:[["Jobs supported (net)", fmtNum(jobs), "Estimated jobs supported by the program after subtracting for deadweight loss (activity that would have happened anyway)."],["Leveraged private capital", fmtUSD(budget*a.leverageRatio), "Estimated private investment mobilized alongside the public dollars, based on a typical leverage ratio for this type of program."],["Deadweight loss share", (a.deadweightPct*100).toFixed(0)+"%", "Share of the subsidized activity estimated to have happened anyway without the subsidy — notoriously hard to measure for any real program."]],
+        costNote:"Annual program budget.", revNote:"Modest tax-base feedback from supported economic activity."};
+    },
+    partisan:{progFor:"Can target strategic sectors and address market failures private capital underinvests in.",progAgainst:"Risk subsidies flow to incumbents rather than workers/communities without conditions.",consFor:"Some support sector subsidies framed around national/economic security.",consAgainst:"General skepticism of 'industrial policy' and government picking winners.",libFor:"Essentially none — direct opposition to most subsidy programs as market distortion.",libAgainst:"Strongly opposed: subsidies misallocate capital and create rent-seeking.",moderate:"Effectiveness is highly program-specific; deadweight loss (subsidizing what would've happened anyway) is persistent and hard to measure.",support:"Targeted industry associations, regional development officials.",oppose:"Libertarians, fiscal conservatives, competitor firms not receiving subsidy."}
+  },
+  "Mental Health Services & Crisis Lines": { priors:[76,60,45],
+    calc(pop, years){
+      const a = { costPerCapita:18, callsPer1000:22, diversionPct:0.35, costAvoided:1800 };
+      const calls = (pop/1000)*a.callsPer1000;
+      const diverted = calls*a.diversionPct;
+      return {cost: pop*a.costPerCapita, rev: diverted*a.costAvoided, difficulty:0.3,
+        stats:[["Crisis calls handled/yr", fmtNum(calls), "Estimated annual crisis-line call volume, based on a per-1,000-residents call-rate benchmark from 988 Lifeline rollout data."],["Diverted from ER/jail", fmtNum(diverted), "Estimated share of crisis calls diverted away from emergency rooms or jail bookings toward clinical response instead."],["Recidivism note", "Lower, per SAMHSA evals", "A qualitative pointer to program-evaluation literature rather than a calculated figure."]],
+        costNote:"Per-capita program cost (crisis line staffing, mobile response teams).", revNote:"Offsetting savings from avoided ER visits and jail bookings."};
+    },
+    partisan:{progFor:"Shifts crisis response away from armed police toward clinical care.",progAgainst:"Underfunded rollout risks long wait times; doesn't replace broader healthcare access reform.",consFor:"Reduces avoidable ER/jail costs — a public-safety efficiency measure, not just a social program.",consAgainst:"Concern about cost growth and scope creep of crisis-response mandates.",libFor:"Diverting non-criminal crises from law enforcement limits unnecessary state coercive power.",libAgainst:"Wary of new taxpayer-funded program permanence and scope.",moderate:"Early 988 Lifeline/co-responder evaluations show positive cost-offset results; workforce shortages are the binding constraint, not political support.",support:"Mental health advocates, law enforcement seeking call-volume relief, bipartisan legislators.",oppose:"Fiscal hawks concerned about open-ended program costs."}
+  },
+  "First-Time Homebuyer Incentives": { priors:[58,60,40],
+    calc(pop, years){
+      const a = { eligiblePer1000:3.0, assistAmount:15000, uptake:0.6 };
+      const assisted = (pop/1000)*a.eligiblePer1000*a.uptake;
+      const cost = assisted*a.assistAmount;
+      return {cost, rev: cost*0.05, difficulty:0.2,
+        stats:[["Buyers assisted/yr", fmtNum(assisted), "Estimated number of buyers receiving assistance annually, based on eligible-buyer and uptake-rate assumptions."],["Homeownership rate Δ", "+0.4pp", "Estimated change in the homeownership rate attributable to the program — a small, illustrative figure."],["Home price pressure", "+1.5%", "Estimated upward price pressure from demand-side assistance without a matching supply increase — see this module's tradeoff with the Housing/Zoning model."]],
+        costNote:"Down-payment/credit assistance per assisted buyer.", revNote:"Modest transfer/recording-tax feedback."};
+    },
+    partisan:{progFor:"Helps lower/middle-income and first-gen buyers build wealth, partially addressing the racial wealth gap.",progAgainst:"Without supply-side reform, demand subsidies risk inflating prices and benefiting sellers more than buyers.",consFor:"Supports the broadly popular goal of expanding homeownership and wealth-building.",consAgainst:"Concern about market distortion and historical precedent of demand subsidies contributing to price bubbles.",libFor:"Minimal; some may prefer this to direct public housing construction as a lighter-touch intervention.",libAgainst:"Opposes subsidizing private purchases broadly as a taxpayer-funded market distortion.",moderate:"Housing economists broadly agree demand-side aid is far less effective — sometimes counterproductive — without simultaneous supply-side reform.",support:"First-time buyers, real estate industry groups, broadly popular standalone.",oppose:"Housing economists/supply-side advocates, fiscal conservatives."}
+  },
+  "Campaign Finance & Lobbying Reform": { priors:[68,42,38],
+    calc(pop, years){
+      const a = { matchRate:6.0, adminPerCandidate:25000, candidatesPerMillion:8 };
+      const candidates = (pop/1000000)*a.candidatesPerMillion;
+      const matchedFunds = candidates*40000*(a.matchRate/6.0);
+      return {cost: matchedFunds + candidates*a.adminPerCandidate, rev: 0, difficulty:0.5,
+        stats:[["Candidates participating", fmtNum(candidates), "Estimated number of candidates who'd participate in the public matching program, based on a per-million-population candidate rate."],["Small-donor participation", "+40%", "Estimated increase in small-dollar donor participation, drawn from NYC/Seattle public-matching program evaluations."],["Match rate", a.matchRate.toFixed(1)+":1", "The public dollars matched per $1 of qualifying small donations — directly drives the program's cost."]],
+        costNote:"Public matching funds plus program administration cost.", revNote:"No direct revenue effect modeled."};
+    },
+    partisan:{progFor:"Reduces influence of large donors/PACs, broadens grassroots participation.",progAgainst:"Public funding alone doesn't address dark money / independent expenditures post-Citizens United.",consFor:"Some support transparency/disclosure reforms without taxpayer financing of campaigns.",consAgainst:"Opposes taxpayer-funded campaign financing as a compelled-speech subsidy; First Amendment concerns.",libFor:"Generally supports disclosure as a market-information tool, but favors free speech over limits.",libAgainst:"Strongly opposes public financing and most spending limits as First Amendment violations.",moderate:"Constitutional constraints (Buckley v. Valeo, Citizens United) limit viable options; voluntary matching models fare better against legal challenge.",support:"Good-governance groups, small-donor-funded candidates across parties.",oppose:"Citizens United-aligned conservatives, free-speech libertarians, incumbents with large-donor networks."}
+  },
+  "Surveillance Policy (LPR & Traffic Cameras)": { priors:[45,62,25],
+    calc(pop, years){
+      const a = { camerasPer100k:25, installCost:12000, maintCost:1800, violationRev:28000 };
+      const cameras = (pop/100000)*a.camerasPer100k;
+      return {cost: cameras*a.maintCost + (cameras*a.installCost)/years, rev: cameras*a.violationRev, difficulty:0.4,
+        stats:[["Cameras deployed", fmtNum(cameras), "Number of cameras this deployment density would install, based on a per-100,000-residents rate."],["Crime clearance Δ", "+6.0%", "Estimated improvement in crime-clearance rates from camera evidence, drawn from mixed effectiveness studies."],["Privacy concern index", "0.55", "A 0–1 heuristic reflecting documented civil-liberties concerns about retention, access, and disparate deployment."]],
+        costNote:"Amortized install cost plus annual maintenance.", revNote:"Violation/fine revenue where applicable."};
+    },
+    partisan:{progFor:"Some support narrow, accountable use with strict retention/oversight rules.",progAgainst:"Strong civil-liberties concern about mass surveillance and disparate enforcement.",consFor:"Generally supportive as a public-safety and traffic-enforcement tool.",consAgainst:"Some constitutional conservatives raise Fourth Amendment/overreach concerns.",libFor:"Minimal — at most narrow, warrant-based, time-limited use cases.",libAgainst:"Strong opposition: mass automated surveillance without individualized suspicion threatens privacy.",moderate:"Real public-safety benefits exist, but durability depends on retention limits, access controls, and audit transparency.",support:"Law enforcement, public-safety-focused voters across party lines.",oppose:"ACLU/EFF-aligned civil libertarians on both left and right, immigrant-rights groups."}
+  }
+};
+
+const policySelect = document.getElementById('policy');
+Object.keys(POLICIES).forEach(name => {
+  const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
+  policySelect.appendChild(opt);
+});
+const popSlider = document.getElementById('pop'), yearsSlider = document.getElementById('years');
+const popVal = document.getElementById('popVal'), yearsVal = document.getElementById('yearsVal');
+
+function renderA(){
+  const name = policySelect.value;
+  const pop = parseInt(popSlider.value,10), years = parseInt(yearsSlider.value,10);
+  popVal.textContent = pop.toLocaleString();
+  yearsVal.textContent = years + (years===1?" yr":" yrs");
+  const policy = POLICIES[name];
+  const r = policy.calc(pop, years);
+  renderLedger('ledgerA', {
+    title:name, geoTag:"POP "+pop.toLocaleString()+" · "+years+"-YR HORIZON",
+    cost:r.cost, rev:r.rev, costNote:r.costNote, revNote:r.revNote, stats:r.stats,
+    priors:policy.priors, difficulty:r.difficulty, pop, partisan:policy.partisan,
+    meta: MODEL_META[name]
+  });
+}
+policySelect.value = "Housing Supply & Zoning Reform";
+policySelect.addEventListener('change', renderA);
+popSlider.addEventListener('input', renderA);
+yearsSlider.addEventListener('input', renderA);
+renderA();
+
+/* =================================================================
+   TAB 2 — BUILD YOUR OWN SCENARIO ENGINE
+   ================================================================= */
+
+// Generic partisan template per mechanism category. Written for the MECHANISM,
+// since the specific real-world program name is whatever the user typed in.
+const MECH_PARTISAN = {
+  cash:{progFor:"Direct, fast-acting aid that reaches people without means-testing bureaucracy; builds household assets/wealth directly.",progAgainst:"Cash alone doesn't fix underlying supply or systemic constraints (e.g. housing supply) and can be regressive if not means-tested.",consFor:"Targeted, time-limited cash aid (e.g. tied to a credit score or savings match) can be framed as enabling self-reliance rather than dependency.",consAgainst:"Concern about cost, fraud/eligibility verification, and whether aid is going to people who'd have succeeded anyway.",libFor:"Direct cash is generally preferred by libertarians over in-kind programs since it preserves individual choice.",libAgainst:"Still opposes the underlying taxation/reallocation required to fund it, and any means-testing bureaucracy.",moderate:"Cash transfer literature (GiveDirectly-style RCTs, EITC research) generally shows efficient delivery with low overhead, but effects on the underlying market (e.g. housing prices) depend on whether supply responds.",support:"Direct beneficiaries, advocates for the targeted demographic, asset-building/wealth-gap researchers.",oppose:"Fiscal conservatives concerned about cost and targeting, those who'd prefer the money fund the original purpose."},
+  leave:{progFor:"Supports working families, gender equity, and health outcomes; closes a major policy gap vs. peer nations.",progAgainst:"Wage replacement or duration may be too low for the lowest earners to actually use it.",consFor:"Family-policy conservatives often support some version, especially via tax credit rather than new mandate.",consAgainst:"New payroll tax or mandate and program bureaucracy; concern about entitlement growth.",libFor:"Prefers market/employer-driven benefits to meet demand without a mandate.",libAgainst:"Opposes mandatory funding mechanisms and government benefit administration.",moderate:"Cross-state evidence (CA, NJ, RI paid-leave programs) shows measurable take-up and health benefits; financing mechanism is the real fight, not the goal.",support:"Working parents, women's/family groups, many small businesses that already offer leave.",oppose:"Anti-tax conservatives, some small-business associations."},
+  service:{progFor:"Expands access to a public good regardless of ability to pay; evidence often favors disadvantaged groups most.",progAgainst:"Risk of crowding out existing high-quality private/nonprofit providers if rolled out poorly.",consFor:"Some support if means-tested, locally controlled, and tied to measurable outcomes.",consAgainst:"Skepticism that government provision is more efficient than market alternatives.",libFor:"Minimal; prefers vouchers/tax credits funneled through private providers.",libAgainst:"Opposes new taxpayer-funded universal service programs and the bureaucracy to run them.",moderate:"Effectiveness is highly program- and execution-specific; comparable past programs show real but moderate, execution-dependent gains.",support:"Direct beneficiaries, the relevant professional/advocacy community, many Democrats.",oppose:"Fiscal conservatives, school-choice/voucher-style advocates, libertarians."},
+  staffing:{progFor:"Can expand a needed public service if paired with accountability and equitable deployment.",progAgainst:"Concern about disparate impact, especially for enforcement-adjacent roles, absent reform.",consFor:"Direct, proven lever for service delivery (more staff = more capacity) with broad public support.",consAgainst:"Minimal direct opposition; mainly budget tradeoffs and union contract terms.",libFor:"Supports the underlying public function as a legitimate core government role.",libAgainst:"Wary of mission creep or expanded enforcement scope tied to new staffing.",moderate:"Staffing increases generally show measurable capacity gains; cost-effectiveness depends heavily on deployment strategy, not headcount alone.",support:"Relevant public-sector unions, service users, broad general public.",oppose:"Fiscal conservatives concerned about recurring payroll cost growth."},
+  tax:{progFor:"Raises progressive revenue to fund public investment, reducing after-tax inequality (if a rate increase).",progAgainst:"Some prefer wealth/capital-focused reform over ordinary rate changes alone.",consFor:"Rate reductions are framed as pro-growth and reduce distortion of high marginal rates.",consAgainst:"Rate increases are opposed as growth-dampening and likely to trigger avoidance/relocation.",libFor:"Favors lower rates generally as reducing government's claim on private income.",libAgainst:"Skeptical projected revenue materializes once behavioral responses are priced in.",moderate:"The elasticity of taxable income for the affected group is genuinely contested in the literature — the single biggest source of uncertainty in this estimate.",support:"Depends on direction: revenue increases draw public-investment advocates; cuts draw business/taxpayer groups.",oppose:"Mirror image of supporters depending on direction of the change."},
+  externality:{progFor:"Prices in a real externality and funds mitigation or dividends — a market tool many economists favor.",progAgainst:"Can feel regressive pre-rebate; some prefer direct regulation or public investment instead.",consFor:"Revenue-neutral pricing has drawn some conservative-economist support as a regulation substitute.",consAgainst:"Most elected conservatives oppose new taxes/pricing mechanisms outright.",libFor:"Pigouvian framing (pricing externalities) is more market-consistent than direct regulation for some libertarians.",libAgainst:"Many oppose any new government-set price or tax on principle.",moderate:"Economist consensus generally favors pricing mechanisms as more efficient than command-and-control regulation, but real-world political durability is often low.",support:"Environmental/public-health groups, some economists, dividend recipients.",oppose:"The directly-priced industry, anti-tax conservatives."},
+  subsidy:{progFor:"Can target strategic sectors and correct market failures private capital underinvests in.",progAgainst:"Risk subsidies flow to incumbents rather than workers/communities without strong conditions.",consFor:"Some support sector subsidies framed around national/economic security or competitiveness.",consAgainst:"General skepticism of government 'picking winners' over broad-based tax/regulatory relief.",libFor:"Essentially none — direct opposition to most subsidy programs as market distortion.",libAgainst:"Strongly opposed: subsidies misallocate capital and create rent-seeking incentives.",moderate:"Effectiveness is highly program-specific; deadweight loss (subsidizing activity that would've happened anyway) is persistent and hard to measure.",support:"The subsidized industry/sector, regional development officials, affected workers.",oppose:"Libertarians, fiscal conservatives, unsubsidized competitor firms."},
+  infrastructure:{progFor:"Expands access/mobility and can reduce emissions; supports density and equity goals if designed well.",progAgainst:"Capital projects can displace residents/businesses during construction without anti-displacement measures.",consFor:"Targeted, fiscally disciplined projects with strong usage ROI can draw support, especially relieving congestion.",consAgainst:"Skepticism of large capital outlays given chronic cost-overrun problems on big public projects.",libFor:"Limited; might support if user-fee/cost-recovery funded rather than subsidized by general taxation.",libAgainst:"Opposes general-tax-funded capital projects; prefers market-based or fee-funded alternatives.",moderate:"Major infrastructure projects have well-documented cost-overrun risk; benefit-cost ratio depends heavily on project selection and delivery management.",support:"Users/riders of the new infrastructure, regional business groups, construction labor.",oppose:"Anti-tax groups, those who feel general funds are being diverted from other priorities."},
+  insurance:{progFor:"Closes coverage gaps and reduces financial risk exposure for the previously uncovered population.",progAgainst:"Subsidy/marketplace models may still leave some underinsured vs. more comprehensive alternatives.",consFor:"Some support market-based expansion (price transparency, expanded plan choice) over direct subsidy.",consAgainst:"Cost concerns and opposition to mandate-style structures.",libFor:"Prefers deregulation to expand access over new subsidy spending.",libAgainst:"Opposes subsidy expansion and any individual/employer mandate as coercive.",moderate:"Coverage-expansion programs reliably reduce the uncovered rate; the fight is almost always over financing mechanism, not the underlying goal.",support:"The newly-covered population, providers seeking reduced uncompensated costs.",oppose:"Fiscal conservatives, those opposed to mandate-style structures."},
+  loanguarantee:{progFor:"Expands access to credit for populations markets underserve, without an upfront cash outlay.",progAgainst:"Risk that government absorbs downside risk while private lenders capture the upside.",consFor:"Leverages private capital rather than direct government spending; can be framed as market-enabling.",consAgainst:"Concern about contingent-liability risk to taxpayers if default rates run high.",libFor:"Preferable to direct subsidy since it relies on private underwriting and repayment, not a grant.",libAgainst:"Still opposes any government backstop of private risk as a market distortion.",moderate:"Loan guarantee programs (SBA-style) generally have modest net cost if default-rate assumptions hold, but are sensitive to economic-downturn scenarios that raise defaults simultaneously.",support:"Borrowers who'd otherwise be credit-constrained, lenders gaining a guaranteed counterparty.",oppose:"Fiscal conservatives wary of contingent liabilities, free-market purists."},
+  regulatory:{progFor:"Can reduce compliance burden for smaller/newer entrants if not simply a deregulatory giveaway to incumbents.",progAgainst:"Deregulation without guardrails risks externalities (safety, environmental, consumer protection) shifting onto the public.",consFor:"Reduces government-imposed cost and friction on private activity; broadly popular deregulatory frame.",consAgainst:"Minimal — generally the preferred direction for this mechanism among conservatives.",libFor:"Strongly favored: any reduction in regulatory/compliance burden expands individual and market freedom.",libAgainst:"Would oppose if any new reporting/compliance requirement is added alongside the relief.",moderate:"Regulatory-cost studies generally show real compliance savings, but the public-interest tradeoff depends entirely on which protections are being loosened.",support:"Affected businesses/entities, deregulation advocates, libertarians.",oppose:"Consumer/environmental/safety advocates worried about externalities shifting to the public."}
+};
+
+const MECHANISMS = {
+  cash:{
+    label:"Direct Cash / Down-Payment Assistance",
+    desc:"A fixed pool of money distributed directly to eligible recipients — down-payment grants, baby bonds, guaranteed income, disaster relief checks, EITC-style boosts.",
+    priors:[58,55,40], difficulty:0.2,
+    fields:[
+      {key:"totalBudget", label:"Total program budget ($)", def:335000000, opts:[1e6,5e6,10e6,50e6,100e6,335e6,500e6,1e9,5e9]},
+      {key:"perRecipient", label:"Assistance per recipient ($)", def:15000, opts:[5000,10000,15000,20000,30000,50000]},
+      {key:"avgAssetPrice", label:"Avg. purchase price for leverage calc ($, 0 = none)", def:450000, opts:[0,150000,250000,350000,450000,650000,900000,1200000]}
+    ],
+    calc(inp, pop, years){
+      const yrs = years;
+      const recipients = inp.totalBudget / Math.max(1,inp.perRecipient);
+      const annualCost = inp.totalBudget / yrs;
+      const stats = [["Recipients funded (total)", fmtNum(recipients), "Total budget divided by the assistance amount per recipient — how many people this program can fund at that level."], ["Annual cost", fmtUSD(annualCost), "Total budget divided evenly across your selected time horizon."]];
+      if (inp.avgAssetPrice > 0){
+        const leverage = inp.avgAssetPrice / inp.perRecipient;
+        stats.push(["Purchasing power unlocked", fmtUSD(recipients*inp.avgAssetPrice), "Total value of purchases this assistance can unlock, assuming each recipient uses it as leverage (e.g. a down payment) rather than the full purchase price."]);
+        stats.push(["Leverage ratio", leverage.toFixed(1)+"× per assistance $", "How many dollars of purchase value each dollar of assistance unlocks — the average purchase price divided by the assistance amount."]);
+      }
+      return {cost: annualCost, rev: annualCost*0.03, difficulty:0.2, stats,
+        costNote:"Total budget disbursed evenly over the program period.",
+        revNote:"Modest transfer/recording-tax feedback from enabled purchases."};
+    }
+  },
+  leave:{
+    label:"Wage-Replacement / Leave Program",
+    desc:"Paid family/medical leave, expanded unemployment insurance, disability insurance.",
+    priors:[78,48,35], difficulty:0.3,
+    fields:[
+      {key:"weeks", label:"Weeks of leave/benefit", def:12, opts:[4,6,8,12,16,20,26]},
+      {key:"wageReplace", label:"Wage replacement rate (0–1)", def:0.66, opts:[0.5,0.6,0.66,0.7,0.8,1.0]},
+      {key:"eligiblePct", label:"Eligible workforce share (0–1)", def:0.55, opts:[0.25,0.4,0.55,0.7,0.85,1.0]},
+      {key:"avgWage", label:"Average annual wage ($)", def:62000, opts:[35000,45000,55000,62000,75000,90000,120000]},
+      {key:"payrollTax", label:"Funding payroll tax rate (0–1)", def:0.004, opts:[0.001,0.002,0.004,0.006,0.008,0.01]}
+    ],
+    calc(inp, pop, years){
+      const workforce = pop*0.62;
+      const claimants = workforce*inp.eligiblePct*0.12;
+      const benefitCost = claimants*inp.weeks*(inp.avgWage/52)*inp.wageReplace;
+      const taxRev = workforce*inp.avgWage*inp.payrollTax;
+      return {cost: benefitCost, rev: taxRev, difficulty:0.3,
+        stats:[["Workers covered/yr", fmtNum(claimants), "Estimated number of workers filing a claim in a given year, based on workforce size and the eligible-share/claim-rate assumptions."],["Annual benefit outlay", fmtUSD(benefitCost), "Total wage-replacement payments to claimants in a year, before any administrative cost."],["Payroll tax revenue", fmtUSD(taxRev), "Dedicated payroll-tax revenue collected to fund the program, based on the tax rate and wage base you've selected."]],
+        costNote:"Wage-replacement benefit payouts to eligible claimants.", revNote:"Dedicated payroll-tax revenue funding the program."};
+    }
+  },
+  service:{
+    label:"Universal / Targeted Service Program",
+    desc:"Pre-K, mental health clinics, job training centers, libraries — recurring per-participant service delivery.",
+    priors:[74,42,30], difficulty:0.3,
+    fields:[
+      {key:"costPerParticipant", label:"Cost per participant per year ($)", def:11000, opts:[3000,5000,8000,11000,15000,20000,30000]},
+      {key:"eligiblePer1000", label:"Eligible population per 1,000 residents", def:12, opts:[2,5,8,12,20,30,50]},
+      {key:"uptakePct", label:"Uptake / enrollment rate (0–1)", def:0.75, opts:[0.25,0.5,0.65,0.75,0.85,1.0]}
+    ],
+    calc(inp, pop, years){
+      const eligible = (pop/1000)*inp.eligiblePer1000;
+      const participants = eligible*inp.uptakePct;
+      const cost = participants*inp.costPerParticipant;
+      return {cost, rev: cost*0.08, difficulty:0.3,
+        stats:[["Participants served/yr", fmtNum(participants), "Number of people enrolled annually, based on the eligible population and the uptake rate you've selected."],["Eligible population", fmtNum(eligible), "Total population that meets the program's eligibility criteria, before accounting for uptake."],["Cost per participant", fmtUSD(inp.costPerParticipant), "The per-participant annual cost you've selected — the main driver of total program cost."]],
+        costNote:"Annual per-participant program cost × enrolled participants.", revNote:"Modest tax-base offset from improved outcomes/workforce participation."};
+    }
+  },
+  staffing:{
+    label:"Public Staffing Increase",
+    desc:"Police, teachers, caseworkers, public-health nurses — adding headcount to an existing public service.",
+    priors:[50,60,45], difficulty:0.2,
+    fields:[
+      {key:"staffPer1000", label:"New staff per 1,000 residents", def:0.5, opts:[0.1,0.25,0.5,0.75,1.0,1.5,2.0]},
+      {key:"costPerStaff", label:"Fully loaded cost per staff member ($/yr)", def:120000, opts:[60000,90000,120000,150000,180000,220000]}
+    ],
+    calc(inp, pop, years){
+      const newStaff = (pop/1000)*inp.staffPer1000;
+      const cost = newStaff*inp.costPerStaff;
+      return {cost, rev: 0, difficulty:0.2,
+        stats:[["New staff hired", fmtNum(newStaff), "Number of new positions this staffing increase funds, based on the staff-per-1,000-residents rate."],["Annual cost per staff member", fmtUSD(inp.costPerStaff), "Fully loaded compensation (salary, benefits, equipment, training) you've selected per new hire."],["Total annual cost", fmtUSD(cost), "New staff hired multiplied by the fully loaded cost per staff member."]],
+        costNote:"Fully loaded cost (salary, benefits, equipment, training) × new headcount.", revNote:"No direct revenue effect modeled for staffing increases."};
+    }
+  },
+  tax:{
+    label:"Tax Rate Change",
+    desc:"Income, corporate, sales, or property tax rate increases or cuts.",
+    priors:[55,50,45], difficulty:0.35,
+    fields:[
+      {key:"rateChangePP", label:"Rate change (percentage points, + or −)", def:3.0, opts:[-10,-5,-3,-1,1,2,3,5,10]},
+      {key:"affectedSharePct", label:"Share of population affected (0–1)", def:0.02, opts:[0.005,0.01,0.02,0.05,0.1,0.25,0.5,1.0]},
+      {key:"avgIncome", label:"Avg. taxable amount for affected group ($)", def:650000, opts:[50000,100000,250000,400000,650000,1000000,2500000]},
+      {key:"eti", label:"Elasticity of taxable income (behavioral offset)", def:0.25, opts:[0.1,0.2,0.25,0.35,0.5,0.75]}
+    ],
+    calc(inp, pop, years){
+      const affected = pop*0.45*inp.affectedSharePct;
+      const staticRev = affected*inp.avgIncome*(inp.rateChangePP/100);
+      const offset = staticRev*inp.eti*(inp.rateChangePP/10);
+      const dynamicRev = staticRev-offset;
+      return {cost: 0, rev: dynamicRev, difficulty:0.35,
+        stats:[["Taxpayers affected", fmtNum(affected), "Number of taxpayers in the affected group, based on the population share you've selected."],["Static revenue estimate", fmtUSD(staticRev), "Revenue if no one changed their behavior in response to the rate change — the textbook 'static score'."],["Behavioral offset", fmtUSD(offset), "Revenue lost to behavioral response, based on the elasticity of taxable income you've selected — the most contested number in this model."]],
+        costNote:"No direct spending line; this mechanism models a revenue change.", revNote:"Dynamic estimate after behavioral response."};
+    }
+  },
+  externality:{
+    label:"Externality Pricing (carbon, sin tax, congestion)",
+    desc:"Carbon tax, sugar/tobacco tax, congestion pricing — pricing a behavior or externality.",
+    priors:[68,28,30], difficulty:0.6,
+    fields:[
+      {key:"pricePerUnit", label:"Price per unit ($)", def:50, opts:[10,25,50,75,100,150]},
+      {key:"unitsPerCapita", label:"Units per capita per year", def:14.0, opts:[1,5,10,14,20,30]},
+      {key:"dividendShare", label:"Share of revenue rebated to households (0–1)", def:0.70, opts:[0,0.25,0.5,0.7,0.85,1.0]}
+    ],
+    calc(inp, pop, years){
+      const grossRev = pop*inp.unitsPerCapita*inp.pricePerUnit;
+      const dividend = grossRev*inp.dividendShare;
+      return {cost: dividend, rev: grossRev, difficulty:0.6,
+        stats:[["Gross revenue collected", fmtUSD(grossRev), "Total revenue collected from the price you've set, before any rebate is paid back out."],["Per-household dividend/yr", fmtUSD(dividend/Math.max(1,pop/2.4)), "Average household's share of the rebated revenue, assuming an equal per-household payout."],["Rebate share", (inp.dividendShare*100).toFixed(0)+"%", "The share of collected revenue you've chosen to return directly to households as a dividend."]],
+        costNote:"Dividend/rebate returned to households — shown as a 'cost' to government.", revNote:"Gross pricing revenue collected before rebate."};
+    }
+  },
+  subsidy:{
+    label:"Business / Sector Subsidy or Grant",
+    desc:"Targeted grants or subsidies to an industry, sector, or region.",
+    priors:[60,45,25], difficulty:0.4,
+    fields:[
+      {key:"totalBudget", label:"Total annual program budget ($)", def:70000000, opts:[5e6,20e6,50e6,70e6,150e6,300e6,500e6,1e9]},
+      {key:"leverageRatio", label:"Private capital leveraged per public $", def:2.5, opts:[0.5,1,1.5,2.5,4,6]},
+      {key:"jobsPerMillion", label:"Jobs supported per $1M spent", def:9, opts:[2,5,9,15,25]},
+      {key:"deadweightPct", label:"Deadweight loss share (0–1)", def:0.20, opts:[0,0.1,0.2,0.3,0.5]}
+    ],
+    calc(inp, pop, years){
+      const jobs = (inp.totalBudget/1000000)*inp.jobsPerMillion*(1-inp.deadweightPct);
+      return {cost: inp.totalBudget, rev: inp.totalBudget*0.06, difficulty:0.4,
+        stats:[["Jobs supported (net)", fmtNum(jobs), "Estimated jobs supported by the program after subtracting for deadweight loss (activity that would have happened anyway)."],["Leveraged private capital", fmtUSD(inp.totalBudget*inp.leverageRatio), "Estimated private investment mobilized alongside the public dollars, based on the leverage ratio you've selected."],["Deadweight loss share", (inp.deadweightPct*100).toFixed(0)+"%", "Share of the subsidized activity estimated to have happened anyway without the subsidy — notoriously hard to measure for any real program."]],
+        costNote:"Annual program budget.", revNote:"Modest tax-base feedback from supported economic activity."};
+    }
+  },
+  infrastructure:{
+    label:"Infrastructure Capital Project",
+    desc:"Transit lines, housing-supply-enabling infrastructure, broadband buildout, water/sewer upgrades.",
+    priors:[70,40,35], difficulty:0.5,
+    fields:[
+      {key:"capitalCost", label:"Total capital cost ($)", def:1125000000, opts:[50e6,250e6,500e6,1.125e9,2e9,5e9,10e9]},
+      {key:"operatingCostAnnual", label:"Annual operating cost ($)", def:21250000, opts:[1e6,5e6,21.25e6,50e6,100e6]},
+      {key:"annualUsers", label:"Projected annual users/beneficiaries", def:36000, opts:[5000,15000,36000,75000,150000,500000]},
+      {key:"revenuePerUser", label:"Revenue per user per year ($)", def:687.5, opts:[0,100,300,687.5,1000,2000]}
+    ],
+    calc(inp, pop, years){
+      const annualCapital = inp.capitalCost/years;
+      const cost = annualCapital + inp.operatingCostAnnual;
+      const rev = inp.annualUsers*inp.revenuePerUser;
+      return {cost, rev, difficulty:0.5,
+        stats:[["Annual users/beneficiaries", fmtNum(inp.annualUsers), "The usage level you've selected — directly drives the fare/fee revenue estimate."],["Capital cost amortized/yr", fmtUSD(annualCapital), "Total capital cost spread evenly across your selected time horizon."],["Construction jobs", fmtNum(inp.capitalCost/130000), "Rough construction-sector jobs supported, estimated at a standard cost-per-job ratio."]],
+        costNote:"Amortized capital cost plus annual operating cost.", revNote:"Usage-based revenue (fares, fees, connection charges)."};
+    }
+  },
+  insurance:{
+    label:"Insurance / Coverage Expansion",
+    desc:"Healthcare coverage, unemployment insurance, flood/disaster insurance backstops.",
+    priors:[75,38,32], difficulty:0.45,
+    fields:[
+      {key:"uncoveredPct", label:"Uncovered population share (0–1)", def:0.08, opts:[0.02,0.05,0.08,0.12,0.2]},
+      {key:"coverageGainPct", label:"Coverage gain among uncovered (0–1)", def:0.65, opts:[0.25,0.5,0.65,0.8,1.0]},
+      {key:"subsidyCost", label:"Subsidy cost per newly covered person ($/yr)", def:6800, opts:[2000,4000,6800,9000,12000]},
+      {key:"offsetSavings", label:"Offset savings per newly covered person ($/yr)", def:900, opts:[200,500,900,1500,2500]}
+    ],
+    calc(inp, pop, years){
+      const newlyCovered = pop*inp.uncoveredPct*inp.coverageGainPct;
+      return {cost: newlyCovered*inp.subsidyCost, rev: newlyCovered*inp.offsetSavings, difficulty:0.45,
+        stats:[["People newly covered", fmtNum(newlyCovered), "Number of previously-uncovered people gaining coverage, based on the population share and coverage-gain assumptions."],["Subsidy cost per person", fmtUSD(inp.subsidyCost), "The annual subsidy cost per newly covered person you've selected."],["Offset savings per person", fmtUSD(inp.offsetSavings), "Estimated savings per newly covered person from reduced uncompensated care, used to calculate the program's revenue offset."]],
+        costNote:"Subsidy/marketplace cost per newly covered person.", revNote:"Offsetting savings from reduced uncompensated care/claims."};
+    }
+  },
+  loanguarantee:{
+    label:"Loan Guarantee / Credit Enhancement",
+    desc:"SBA-style loan guarantees, mortgage guarantee programs, student-loan guarantees.",
+    priors:[55,55,35], difficulty:0.35,
+    fields:[
+      {key:"guaranteedVolume", label:"Guaranteed loan volume ($)", def:500000000, opts:[50e6,150e6,300e6,500e6,1e9,2e9]},
+      {key:"defaultRatePct", label:"Assumed default rate (0–1)", def:0.05, opts:[0.01,0.03,0.05,0.08,0.12]},
+      {key:"feeRatePct", label:"Guarantee fee rate (0–1)", def:0.01, opts:[0.0025,0.005,0.01,0.015,0.02]}
+    ],
+    calc(inp, pop, years){
+      const expectedLoss = inp.guaranteedVolume*inp.defaultRatePct;
+      const feeRev = inp.guaranteedVolume*inp.feeRatePct;
+      return {cost: Math.max(0,expectedLoss-feeRev), rev: feeRev, difficulty:0.35,
+        stats:[["Loans enabled/guaranteed", fmtUSD(inp.guaranteedVolume), "Total loan volume this program backs — the government's contingent liability, not a direct cash outlay."],["Expected default cost", fmtUSD(expectedLoss), "Guaranteed volume multiplied by the assumed default rate — the government's expected loss if borrowers default at that rate."],["Fee revenue collected", fmtUSD(feeRev), "Upfront guarantee fees collected, which offset some or all of the expected default cost."]],
+        costNote:"Expected default losses net of guarantee fees collected.", revNote:"Guarantee fee revenue collected upfront."};
+    }
+  },
+  regulatory:{
+    label:"Regulatory / Deregulatory Change",
+    desc:"Zoning reform, licensing reform, permitting streamlining — changes to compliance burden rather than direct spending.",
+    priors:[55,50,55], difficulty:0.4,
+    fields:[
+      {key:"affectedEntities", label:"Entities/individuals affected", def:50000, opts:[1000,10000,50000,120000,300000,1000000]},
+      {key:"complianceCostChange", label:"Compliance cost change per entity ($, negative = savings)", def:-1200, opts:[-5000,-1800,-1200,-500,0,500,1200]},
+      {key:"adminCostChange", label:"Government admin cost change ($/yr, negative = savings)", def:-5000000, opts:[-20000000,-8000000,-5000000,-2000000,0,2000000,5000000]}
+    ],
+    calc(inp, pop, years){
+      const complianceSavings = -inp.affectedEntities*inp.complianceCostChange;
+      return {cost: inp.adminCostChange, rev: 0, difficulty:0.4,
+        stats:[["Entities affected", fmtNum(inp.affectedEntities), "Number of entities or individuals subject to this regulatory change."],["Compliance cost change (total)", fmtUSD(inp.affectedEntities*inp.complianceCostChange), "Total change in compliance costs across all affected entities — negative means net savings from the change."],["Secondary economic activity est.", fmtUSD(Math.abs(complianceSavings)*1.5), "A rough multiplier estimate of additional economic activity unlocked by compliance savings being redirected elsewhere."]],
+        costNote:"Net change in government administrative/enforcement cost.", revNote:"No direct revenue effect modeled for this mechanism."};
+    }
+  }
+};
+
+// Funding source modifiers — orthogonal to mechanism, changes framing + priors.
+const FUNDING_SOURCES = {
+  newtax:{label:"New broad-based tax or new spending", priorShift:[0,0,0],
+    note:(cost)=>({title:"Funding: New tax / new spending", text:`This is modeled as genuinely new net government spending of ${fmtUSD(cost)}/yr — no existing budget is reduced to pay for it.`})},
+  reallocated:{label:"Reallocated from an existing budget or bond program", priorShift:[2,8,6],
+    note:(cost)=>({title:"Funding: Reallocated, not new spending", text:`This redirects ${fmtUSD(cost)}/yr from an existing allocation. The fiscal cost shown is the new program's cost — the real tradeoff is the opportunity cost of whatever this money was previously funding, which isn't captured numerically here.`})},
+  debt:{label:"New debt / bond issuance", priorShift:[0,-10,-12],
+    note:(cost)=>({title:"Funding: New debt issuance", text:`Assumes this is financed with new municipal/government debt at roughly 4.5% annual interest. An estimated ${fmtUSD(cost*0.045)}/yr in ongoing debt service is added on top of the program cost shown below.`})},
+  publicprivate:{label:"Public-private partnership / leveraged capital", priorShift:[-3,10,12],
+    note:(cost)=>({title:"Funding: Public-private leverage", text:`Assumes government covers roughly 40% of the cost shown, with the remainder financed by private capital expecting a return — reducing the direct public outlay but introducing a private profit motive into program design.`})},
+  grant:{label:"Federal / external grant or pass-through funding", priorShift:[5,5,4],
+    note:(cost)=>({title:"Funding: External grant / pass-through", text:`Assumes this is funded by an outside grant rather than local revenue — the local net fiscal cost is treated as $0, though the full program cost shown below still represents real resources being spent somewhere.`})}
+};
+
+const mechSelect = document.getElementById('mechanism');
+Object.keys(MECHANISMS).forEach(key => {
+  const opt = document.createElement('option'); opt.value = key; opt.textContent = MECHANISMS[key].label;
+  mechSelect.appendChild(opt);
+});
+const fundingSelect = document.getElementById('fundingSource');
+Object.keys(FUNDING_SOURCES).forEach(key => {
+  const opt = document.createElement('option'); opt.value = key; opt.textContent = FUNDING_SOURCES[key].label;
+  fundingSelect.appendChild(opt);
+});
+
+const popBSlider = document.getElementById('popB'), yearsBSlider = document.getElementById('yearsB');
+const popBVal = document.getElementById('popBVal'), yearsBVal = document.getElementById('yearsBVal');
+const mechFieldsContainer = document.getElementById('mechFields');
+const mechDescEl = document.getElementById('mechDesc');
+const fundingDescEl = document.getElementById('fundingDesc');
+const scenarioNameInput = document.getElementById('scenarioName');
+const geoLabelInput = document.getElementById('geoLabel');
+
+// Formats a raw numeric option into a friendly dropdown label based on its magnitude.
+function formatOptionLabel(v){
+  if (Math.abs(v) >= 1000 && Number.isInteger(v)) return "$" + v.toLocaleString();
+  if (Math.abs(v) < 1 && v !== 0) return (v*100).toFixed(2).replace(/\.?0+$/,'') + "%";
+  return v.toLocaleString();
+}
+
+function renderMechFields(mechKey){
+  const mech = MECHANISMS[mechKey];
+  mechDescEl.textContent = mech.desc;
+  mechFieldsContainer.innerHTML = mech.fields.map(f => {
+    const opts = f.opts.includes(f.def) ? f.opts : [...f.opts, f.def].sort((a,b)=>a-b);
+    const optionsHTML = opts.map(v => `<option value="${v}" ${v===f.def?'selected':''}>${formatOptionLabel(v)}</option>`).join('')
+      + `<option value="__custom__">Custom amount…</option>`;
+    return `
+    <div class="field">
+      <label for="mf_${f.key}">${f.label}</label>
+      <select id="mf_${f.key}">${optionsHTML}</select>
+      <input type="number" id="mf_${f.key}_custom" style="display:none; margin-top:8px;" value="${f.def}">
+    </div>`;
+  }).join('');
+
+  mechFieldsContainer.querySelectorAll('select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const customInput = document.getElementById(sel.id + '_custom');
+      customInput.style.display = (sel.value === '__custom__') ? 'block' : 'none';
+      renderB();
+    });
+  });
+  mechFieldsContainer.querySelectorAll('input[type=number]').forEach(inp => inp.addEventListener('input', renderB));
+}
+
+// Reads the active value for a field, whether it's the dropdown or its Custom fallback input.
+function getFieldValue(key){
+  const sel = document.getElementById('mf_'+key);
+  if (sel.value === '__custom__') return parseFloat(document.getElementById('mf_'+key+'_custom').value);
+  return parseFloat(sel.value);
+}
+
+// Sets a field to the closest matching preset, or switches to Custom and fills the exact value.
+function setFieldValue(key, value, opts){
+  const sel = document.getElementById('mf_'+key);
+  const customInput = document.getElementById('mf_'+key+'_custom');
+  if (opts.includes(value)){
+    sel.value = String(value);
+    customInput.style.display = 'none';
+  } else {
+    sel.value = '__custom__';
+    customInput.value = value;
+    customInput.style.display = 'block';
+  }
+}
+
+function renderB(){
+  const mechKey = mechSelect.value;
+  const fundingKey = fundingSelect.value;
+  const mech = MECHANISMS[mechKey];
+  const funding = FUNDING_SOURCES[fundingKey];
+  fundingDescEl.textContent = "";
+
+  const pop = parseInt(popBSlider.value,10), years = parseInt(yearsBSlider.value,10);
+  popBVal.textContent = pop.toLocaleString();
+  yearsBVal.textContent = years + (years===1?" yr":" yrs");
+
+  const inputs = {};
+  mech.fields.forEach(f => { inputs[f.key] = getFieldValue(f.key); });
+
+  const r = mech.calc(inputs, pop, years);
+  let cost = r.cost, rev = r.rev;
+  let extraStats = [];
+
+  if (fundingKey === 'debt'){
+    const debtService = cost*0.045;
+    cost = cost + debtService;
+    extraStats.push(["Annual debt service added", fmtUSD(debtService)]);
+  }
+  if (fundingKey === 'publicprivate'){
+    cost = cost*0.4;
+  }
+  if (fundingKey === 'grant'){
+    extraStats.push(["Full program cost (grant-funded)", fmtUSD(r.cost)]);
+    cost = 0;
+  }
+
+  const shiftedPriors = [
+    mech.priors[0] + funding.priorShift[0],
+    mech.priors[1] + funding.priorShift[1],
+    mech.priors[2] + funding.priorShift[2]
+  ];
+
+  const liveMeta = MECH_META[mechKey] ? {
+    cost: MECH_META[mechKey].cost, rev: MECH_META[mechKey].rev, sources: MECH_META[mechKey].sources,
+    assumptions: MECH_META[mechKey].assumptions.map((a,i) => ({
+      ...a, value: formatOptionLabel(inputs[mech.fields[i].key])
+    }))
+  } : null;
+
+  renderLedger('ledgerB', {
+    title: scenarioNameInput.value || mech.label,
+    geoTag: (geoLabelInput.value || "Custom geography") + " · POP " + pop.toLocaleString() + " · " + years + "-YR HORIZON",
+    cost, rev, costNote:r.costNote, revNote:r.revNote,
+    stats: r.stats.concat(extraStats),
+    priors: shiftedPriors, difficulty: r.difficulty, pop,
+    partisan: MECH_PARTISAN[mechKey],
+    fundingNote: funding.note(r.cost),
+    meta: liveMeta
+  });
+}
+
+mechSelect.addEventListener('change', () => { renderMechFields(mechSelect.value); renderB(); });
+fundingSelect.addEventListener('change', renderB);
+popBSlider.addEventListener('input', renderB);
+yearsBSlider.addEventListener('input', renderB);
+scenarioNameInput.addEventListener('input', renderB);
+geoLabelInput.addEventListener('input', renderB);
+
+/* ---- Worked examples ---- */
+const EXAMPLES = {
+  paid_leave:{
+    name:"National Paid Maternity & Family Leave Program",
+    geo:"United States", pop:335000000, years:10, mechanism:"leave", funding:"newtax",
+    fields:{ weeks:12, wageReplace:0.66, eligiblePct:0.55, avgWage:62000, payrollTax:0.004 }
+  },
+  ubi:{
+    name:"Guaranteed Income Pilot ($500/month for low-income households)",
+    geo:"Chicago, IL", pop:2700000, years:3, mechanism:"cash", funding:"grant",
+    fields:{ totalBudget:54000000, perRecipient:6000, avgAssetPrice:0 }
+  },
+  carbon_dividend:{
+    name:"Federal Carbon Tax with Household Dividend",
+    geo:"United States", pop:335000000, years:10, mechanism:"externality", funding:"newtax",
+    fields:{ pricePerUnit:50, unitsPerCapita:14.0, dividendShare:0.70 }
+  },
+  loan_guarantee:{
+    name:"State Small Business Loan Guarantee Fund",
+    geo:"Illinois", pop:12600000, years:5, mechanism:"loanguarantee", funding:"publicprivate",
+    fields:{ guaranteedVolume:300000000, defaultRatePct:0.06, feeRatePct:0.012 }
+  },
+  zoning:{
+    name:"Statewide Zoning Reform & Permitting Streamlining",
+    geo:"California", pop:39000000, years:10, mechanism:"regulatory", funding:"newtax",
+    fields:{ affectedEntities:120000, complianceCostChange:-1800, adminCostChange:-8000000 }
+  }
+};
+const exampleSelect = document.getElementById('exampleSelect');
+Object.keys(EXAMPLES).forEach(key => {
+  const opt = document.createElement('option'); opt.value = key; opt.textContent = EXAMPLES[key].name;
+  exampleSelect.appendChild(opt);
+});
+exampleSelect.addEventListener('change', () => {
+  const key = exampleSelect.value;
+  if (!key) return;
+  const ex = EXAMPLES[key];
+  scenarioNameInput.value = ex.name;
+  geoLabelInput.value = ex.geo;
+  popBSlider.value = ex.pop;
+  yearsBSlider.value = ex.years;
+  mechSelect.value = ex.mechanism;
+  fundingSelect.value = ex.funding;
+  renderMechFields(ex.mechanism);
+  const mech = MECHANISMS[ex.mechanism];
+  Object.keys(ex.fields).forEach(k => {
+    const fieldDef = mech.fields.find(f => f.key === k);
+    if (fieldDef) setFieldValue(k, ex.fields[k], fieldDef.opts);
+  });
+  renderB();
+});
+
+/* ---- init ---- */
+mechSelect.value = "cash";
+fundingSelect.value = "newtax";
+renderMechFields("cash");
+// Pre-load first example on init
+exampleSelect.value = "paid_leave";
+exampleSelect.dispatchEvent(new Event('change'));
+
+/* =================================================================
+   TAB 3 — NY COUNTY HOUSING EXPLORER
+   Real population, median home value (NYS Dept. of Tax & Finance 2025
+   residential median sale price by county; NYC boroughs from Zillow ZHVI),
+   and effective property tax rate (Census ACS via propertytaxbystate.com)
+   for all 62 NY counties. MTA district flag drives mortgage recording tax.
+   ================================================================= */
+/* =================================================================
+   REAL VOTER REGISTRATION BY COUNTY — NYS Board of Elections,
+   "Voters Registered by County as of February 20, 2026."
+   DEM/REP/CON/WOR are party enrollment; OTH = all other parties +
+   blank/no-party not otherwise broken out by this report. This is
+   voter REGISTRATION, not officeholders/county legislature seats —
+   see the note rendered with it on the page.
+   ================================================================= */
+const NY_VOTER_REG = {
+  "Albany": {dem:104741, rep:38626, con:4046, wor:1297, oth:6953, blank:62418, total:218081},
+  "Allegany": {dem:5299, rep:14430, con:565, wor:143, oth:1046, blank:6480, total:27963},
+  "Broome": {dem:45568, rep:44251, con:1898, wor:881, oth:5300, blank:35034, total:132932},
+  "Cattaraugus": {dem:12740, rep:21552, con:1331, wor:268, oth:1968, blank:12947, total:50806},
+  "Cayuga": {dem:14610, rep:18899, con:1484, wor:351, oth:1780, blank:14028, total:51152},
+  "Chautauqua": {dem:23953, rep:30527, con:2188, wor:539, oth:3781, blank:24003, total:84991},
+  "Chemung": {dem:15243, rep:22390, con:978, wor:281, oth:2298, blank:14346, total:55536},
+  "Chenango": {dem:6970, rep:14448, con:596, wor:170, oth:1421, blank:8770, total:32375},
+  "Clinton": {dem:17333, rep:16744, con:671, wor:310, oth:2627, blank:16100, total:53785},
+  "Columbia": {dem:19619, rep:12839, con:1076, wor:336, oth:1897, blank:13654, total:49421},
+  "Cortland": {dem:9043, rep:11378, con:535, wor:134, oth:1286, blank:8698, total:31074},
+  "Delaware": {dem:8667, rep:13431, con:571, wor:139, oth:1310, blank:7775, total:31893},
+  "Dutchess": {dem:80751, rep:59453, con:4213, wor:1211, oth:8839, blank:65473, total:219940},
+  "Erie": {dem:291856, rep:168275, con:15977, wor:4230, oth:18615, blank:163683, total:662636},
+  "Essex": {dem:8154, rep:11309, con:327, wor:119, oth:1336, blank:6745, total:27990},
+  "Franklin": {dem:9693, rep:10156, con:436, wor:139, oth:1296, blank:7102, total:28822},
+  "Fulton": {dem:7188, rep:17415, con:756, wor:161, oth:1404, blank:9017, total:35941},
+  "Genesee": {dem:8561, rep:18117, con:1139, wor:190, oth:1557, blank:10650, total:40214},
+  "Greene": {dem:9482, rep:13018, con:851, wor:214, oth:1406, blank:10078, total:35049},
+  "Hamilton": {dem:853, rep:2475, con:84, wor:10, oth:8, blank:993, total:4423},
+  "Herkimer": {dem:9190, rep:20266, con:859, wor:156, oth:2073, blank:9908, total:42452},
+  "Jefferson": {dem:15797, rep:28085, con:1164, wor:285, oth:2192, blank:19276, total:66799},
+  "Lewis": {dem:3799, rep:10606, con:404, wor:58, oth:777, blank:4126, total:19770},
+  "Livingston": {dem:10067, rep:18404, con:998, wor:150, oth:1600, blank:10828, total:42047},
+  "Madison": {dem:11959, rep:18115, con:971, wor:245, oth:2309, blank:13060, total:46659},
+  "Monroe": {dem:217037, rep:132376, con:8991, wor:2654, oth:758, blank:168360, total:530176},
+  "Montgomery": {dem:8679, rep:11632, con:877, wor:167, oth:1338, blank:9027, total:31720},
+  "Nassau": {dem:401733, rep:323924, con:10296, wor:2633, oth:26687, blank:303035, total:1068308},
+  "Niagara": {dem:50690, rep:51933, con:4068, wor:1471, oth:5786, blank:36337, total:150285},
+  "Oneida": {dem:42494, rep:55124, con:2452, wor:631, oth:6680, blank:35550, total:142931},
+  "Onondaga": {dem:122863, rep:87354, con:5431, wor:1730, oth:12067, blank:100551, total:329996},
+  "Ontario": {dem:24327, rep:30537, con:1711, wor:270, oth:3170, blank:23993, total:84008},
+  "Orange": {dem:97348, rep:80904, con:5561, wor:1763, oth:9739, blank:74404, total:269719},
+  "Orleans": {dem:5184, rep:12741, con:686, wor:147, oth:867, blank:6768, total:26393},
+  "Oswego": {dem:17528, rep:36492, con:1957, wor:382, oth:2976, blank:20837, total:80172},
+  "Otsego": {dem:11553, rep:14831, con:641, wor:183, oth:1595, blank:10502, total:39305},
+  "Putnam": {dem:23412, rep:26101, con:1798, wor:308, oth:2972, blank:22476, total:77067},
+  "Rensselaer": {dem:35688, rep:28353, con:4666, wor:2046, oth:5552, blank:37621, total:113926},
+  "Rockland": {dem:96515, rep:55205, con:4638, wor:1195, oth:6051, blank:58201, total:221805},
+  "Saratoga": {dem:55060, rep:66335, con:3532, wor:665, oth:7325, blank:56637, total:189554},
+  "Schenectady": {dem:42089, rep:24879, con:3433, wor:947, oth:3720, blank:33565, total:108633},
+  "Schoharie": {dem:5132, rep:8930, con:616, wor:124, oth:1001, blank:6058, total:21861},
+  "Schuyler": {dem:3415, rep:5607, con:273, wor:68, oth:547, blank:3402, total:13312},
+  "Seneca": {dem:6041, rep:8495, con:466, wor:115, oth:839, blank:5749, total:21705},
+  "St. Lawrence": {dem:19915, rep:24342, con:1190, wor:290, oth:3070, blank:16430, total:65237},
+  "Steuben": {dem:14286, rep:31765, con:1228, wor:287, oth:2127, blank:15450, total:65143},
+  "Suffolk": {dem:371050, rep:356218, con:21675, wor:4415, oth:29680, blank:350168, total:1133206},
+  "Sullivan": {dem:18437, rep:18100, con:1337, wor:313, oth:1701, blank:14824, total:54712},
+  "Tioga": {dem:8371, rep:15572, con:615, wor:135, oth:1522, blank:8693, total:34908},
+  "Tompkins": {dem:36127, rep:11102, con:469, wor:498, oth:1851, blank:17041, total:67088},
+  "Ulster": {dem:57218, rep:30837, con:2660, wor:1092, oth:4456, blank:41121, total:137384},
+  "Warren": {dem:13487, rep:20367, con:889, wor:182, oth:2184, blank:13205, total:50314},
+  "Washington": {dem:9582, rep:17077, con:854, wor:211, oth:1826, blank:11689, total:41239},
+  "Wayne": {dem:14232, rep:25721, con:1783, wor:306, oth:2299, blank:18434, total:62775},
+  "Westchester": {dem:337979, rep:131767, con:7399, wor:2202, oth:17134, blank:185609, total:682090},
+  "Wyoming": {dem:4802, rep:12981, con:662, wor:99, oth:831, blank:6721, total:26096},
+  "Yates": {dem:3392, rep:6828, con:288, wor:59, oth:622, blank:3704, total:14893},
+  "Bronx": {dem:559518, rep:58514, con:3759, wor:4117, oth:11046, blank:156715, total:793669},
+  "Kings": {dem:1172765, rep:152734, con:5328, wor:9268, oth:22320, blank:324140, total:1686555},
+  "New York": {dem:824309, rep:89979, con:2428, wor:3902, oth:16755, blank:236257, total:1173630},
+  "Queens": {dem:831757, rep:164930, con:6165, wor:5301, oth:22309, blank:335768, total:1366230},
+  "Richmond": {dem:130454, rep:109043, con:4373, wor:1274, oth:8064, blank:86054, total:339262}
+};
+const NY_STATEWIDE_REG = Object.values(NY_VOTER_REG).reduce((acc,c) => {
+  acc.dem+=c.dem; acc.rep+=c.rep; acc.con+=c.con; acc.total+=c.total; return acc;
+}, {dem:0,rep:0,con:0,total:0});
+const STATEWIDE_CON_SHARE = NY_STATEWIDE_REG.con / NY_STATEWIDE_REG.total;
+
+// Westchester County Board of Elections, "2026 County Legislative Districts Active
+// Enrollment," dated February 20, 2026. This is ACTIVE-voter enrollment by district —
+// Westchester's 17 legislative districts map 1:1 to its 17-member Board of Legislators,
+// making this the closest real proxy available for "how would the actual legislature
+// lean," district by district, rather than just a county-wide average.
+const WESTCHESTER_DISTRICTS = [
+  {d:"1st", dem:15992, rep:8480, con:569, ind:1106, total:37149},
+  {d:"2nd", dem:17345, rep:10238, con:403, ind:1212, total:41872},
+  {d:"3rd", dem:16619, rep:11292, con:499, ind:1065, total:42036},
+  {d:"4th", dem:18520, rep:11660, con:572, ind:1269, total:45005},
+  {d:"5th", dem:21329, rep:7140, con:250, ind:800, total:40634},
+  {d:"6th", dem:14427, rep:6869, con:637, ind:893, total:33125},
+  {d:"7th", dem:18703, rep:8173, con:307, ind:973, total:39980},
+  {d:"8th", dem:21560, rep:5077, con:258, ind:773, total:38049},
+  {d:"9th", dem:18383, rep:6810, con:411, ind:988, total:37329},
+  {d:"10th", dem:19564, rep:9588, con:397, ind:950, total:41411},
+  {d:"11th", dem:18429, rep:5602, con:266, ind:700, total:34476},
+  {d:"12th", dem:22711, rep:6215, con:263, ind:771, total:40850},
+  {d:"13th", dem:23390, rep:1623, con:144, ind:446, total:31888},
+  {d:"14th", dem:17372, rep:6413, con:513, ind:712, total:34445},
+  {d:"15th", dem:17729, rep:10467, con:727, ind:967, total:40823},
+  {d:"16th", dem:18620, rep:4542, con:455, ind:590, total:32488},
+  {d:"17th", dem:14910, rep:2570, con:223, ind:383, total:24539}
+];
+
+const MTA_DISTRICT = new Set(["Bronx","Kings","New York","Queens","Richmond","Nassau","Suffolk","Westchester","Rockland","Putnam","Dutchess","Orange"]);
+const NYC_BOROUGHS = new Set(["Bronx","Kings","New York","Queens","Richmond"]);
+
+const NY_COUNTIES = [
+  // [name, region, population, medianHome, effTaxRatePct]
+  ["New York","New York City",1629477,1180000,0.92],
+  ["Kings","New York City",2631580,870000,0.71],
+  ["Queens","New York City",2323052,700000,0.87],
+  ["Bronx","New York City",1404779,480000,1.03],
+  ["Richmond","New York City",494956,655000,0.92],
+  ["Nassau","Long Island",1389591,840000,1.46],
+  ["Suffolk","Long Island",1530146,695000,1.73],
+  ["Westchester","Mid-Hudson",999677,925000,1.51],
+  ["Rockland","Mid-Hudson",341883,780000,1.68],
+  ["Putnam","Mid-Hudson",98107,580000,2.12],
+  ["Dutchess","Mid-Hudson",298220,475000,1.89],
+  ["Orange","Mid-Hudson",406616,475000,2.19],
+  ["Ulster","Mid-Hudson",182601,437000,1.77],
+  ["Sullivan","Mid-Hudson",79721,315000,2.00],
+  ["Columbia","Mid-Hudson",61100,485000,1.40],
+  ["Greene","Mid-Hudson",47409,350000,1.49],
+  ["Albany","Capital Region",317018,320500,1.77],
+  ["Rensselaer","Capital Region",160332,280000,2.05],
+  ["Saratoga","Capital Region",238284,450000,1.40],
+  ["Schenectady","Capital Region",160369,285000,2.36],
+  ["Warren","Capital Region",65517,327000,1.47],
+  ["Washington","Capital Region",60522,242000,2.01],
+  ["Erie","Western NY",950622,275000,1.98],
+  ["Niagara","Western NY",210721,225000,2.19],
+  ["Allegany","Western NY",47159,135000,2.92],
+  ["Cattaraugus","Western NY",76145,165000,2.64],
+  ["Chautauqua","Western NY",125544,137000,2.27],
+  ["Genesee","Western NY",57787,189000,2.41],
+  ["Orleans","Western NY",39608,189900,2.72],
+  ["Wyoming","Western NY",39753,180000,2.25],
+  ["Monroe","Finger Lakes",753753,265000,2.63],
+  ["Livingston","Finger Lakes",61498,225000,2.45],
+  ["Ontario","Finger Lakes",112625,315000,2.05],
+  ["Seneca","Finger Lakes",32920,189900,2.19],
+  ["Wayne","Finger Lakes",90929,230000,2.50],
+  ["Yates","Finger Lakes",24526,252110,1.88],
+  ["Broome","Southern Tier",197378,175000,2.52],
+  ["Chemung","Southern Tier",82147,140000,2.45],
+  ["Chenango","Southern Tier",46321,149200,2.26],
+  ["Delaware","Southern Tier",44487,235000,1.72],
+  ["Schuyler","Southern Tier",17562,218500,1.97],
+  ["Steuben","Southern Tier",92588,160000,2.46],
+  ["Tioga","Southern Tier",47864,185000,2.33],
+  ["Tompkins","Southern Tier",104537,370000,2.24],
+  ["Cayuga","Central NY",75102,207500,2.19],
+  ["Cortland","Central NY",46246,176950,2.56],
+  ["Madison","Central NY",67328,245000,2.26],
+  ["Onondaga","Central NY",471129,260000,2.44],
+  ["Oswego","Central NY",117953,185000,2.40],
+  ["Clinton","North Country",78493,230000,2.00],
+  ["Essex","North Country",36973,305000,1.47],
+  ["Franklin","North Country",46696,169000,1.68],
+  ["Hamilton","North Country",5089,292500,1.00],
+  ["Jefferson","North Country",115040,200000,1.54],
+  ["Lewis","North Country",26607,149700,1.62],
+  ["St. Lawrence","North Country",107226,132990,2.33],
+  ["Fulton","Mohawk Valley",52487,180000,2.06],
+  ["Herkimer","Mohawk Valley",59757,155000,2.10],
+  ["Montgomery","Mohawk Valley",49528,185000,2.46],
+  ["Oneida","Mohawk Valley",229124,198500,2.02],
+  ["Otsego","Mohawk Valley",60108,180000,1.70],
+  ["Schoharie","Mohawk Valley",30049,225000,2.03]
+];
+
+const NY_TOTAL_POP = NY_COUNTIES.reduce((sum,c) => sum+c[2], 0);
+
+const nyCountySelect = document.getElementById('nyCounty');
+const regionsOrdered = ["New York City","Long Island","Mid-Hudson","Capital Region","Western NY","Finger Lakes","Southern Tier","Central NY","North Country","Mohawk Valley"];
+regionsOrdered.forEach(region => {
+  const grp = document.createElement('optgroup');
+  grp.label = region;
+  NY_COUNTIES.filter(c => c[1]===region).sort((a,b)=>b[2]-a[2]).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c[0];
+    opt.textContent = c[0] + " County";
+    grp.appendChild(opt);
+  });
+  nyCountySelect.appendChild(grp);
+});
+
+const nyPoolSelect = document.getElementById('nyPool');
+const nyAssistSelect = document.getElementById('nyAssist');
+const nyMortgageRateSelect = document.getElementById('nyMortgageRate');
+
+function renderC(){
+  const countyName = nyCountySelect.value;
+  const county = NY_COUNTIES.find(c => c[0]===countyName);
+  const [name, region, pop, medianHome, effTaxRate] = county;
+
+  const statewidePool = parseFloat(nyPoolSelect.value);
+  const countyShare = statewidePool * (pop / NY_TOTAL_POP);
+
+  let perRecipient = nyAssistSelect.value;
+  perRecipient = (perRecipient === "0.03home") ? medianHome*0.03 : parseFloat(perRecipient);
+
+  const mortgageRate = parseFloat(nyMortgageRateSelect.value);
+  const recipients = countyShare / perRecipient;
+  const isNYC = NYC_BOROUGHS.has(name);
+  const inMTA = MTA_DISTRICT.has(name);
+
+  // Mortgage recording tax: buyer-effective rate (after standard lender-paid 0.25% special additional tax)
+  const loanAmount = Math.max(0, medianHome - perRecipient);
+  let mrtRate, mrtLabel;
+  if (isNYC){
+    mrtRate = loanAmount >= 500000 ? 0.01925 : 0.018;
+    mrtLabel = loanAmount >= 500000 ? "1.925% (NYC, loan ≥$500K)" : "1.80% (NYC, loan <$500K)";
+  } else if (inMTA){
+    mrtRate = 0.008; mrtLabel = "0.80% (MTA-district suburban county)";
+  } else {
+    mrtRate = 0.0075; mrtLabel = "0.75% (rest of state)";
+  }
+  const mrtCost = loanAmount * mrtRate;
+
+  // Property tax with/without Basic STAR exemption
+  const annualPropertyTax = medianHome * (effTaxRate/100);
+  const starSavings = 293; // statewide average Basic STAR savings (NYS Dept of Tax & Finance)
+  const propertyTaxAfterStar = Math.max(0, annualPropertyTax - starSavings);
+
+  // First-year mortgage interest + rough combined NY+federal marginal tax savings if itemizing
+  const firstYearInterest = loanAmount * mortgageRate;
+  const assumedMarginalRate = 0.30;
+  const itemizedSavings = firstYearInterest * assumedMarginalRate;
+
+  const stats = [
+    ["County population", fmtNum(pop), "This county's 2024 ACS population estimate, used to calculate its proportional share of the statewide pool."],
+    ["Median home value", fmtUSD(medianHome), "This county's median home sale price (NYS Dept. of Tax & Finance, or Zillow ZHVI for the 5 NYC boroughs), used for the leverage calculation below."],
+    ["This county's share of pool", fmtUSD(countyShare), "The statewide pool multiplied by this county's share of NY's total population — see the Build Your Own Scenario tab for other allocation methods."]
+  ];
+
+  // Real local political lean from NYS Board of Elections registration (Feb 20, 2026),
+  // used to adjust the generic national priors toward this county's actual electorate.
+  const reg = NY_VOTER_REG[name];
+  const demShare = reg.dem/reg.total, repShare = reg.rep/reg.total, conShare = reg.con/reg.total;
+  const demRepEdge = (reg.dem-reg.rep)/Math.max(1,(reg.dem+reg.rep)); // -1 (all R) to +1 (all D)
+  const conRelative = conShare - STATEWIDE_CON_SHARE; // this county's Conservative-Party registration vs. the state average
+
+  const basePriors = MECHANISMS.cash.priors;
+  const clamp = (x)=>Math.max(0,Math.min(100,x));
+  const localPriors = [
+    clamp(basePriors[0] + demRepEdge*18),
+    clamp(basePriors[1] - demRepEdge*18 + conRelative*250),
+    clamp(basePriors[2])
+  ];
+
+  const extraPanels = [
+      {
+        title: `${name} County's actual voter registration (NYS BOE, Feb 20, 2026)`,
+        rows: [
+          ["Democratic", fmtNum(reg.dem) + "  (" + (demShare*100).toFixed(1) + "%)"],
+          ["Republican", fmtNum(reg.rep) + "  (" + (repShare*100).toFixed(1) + "%)"],
+          ["Conservative", fmtNum(reg.con) + "  (" + (conShare*100).toFixed(1) + "%)"],
+          ["No party / blank", fmtNum(reg.blank) + "  (" + ((reg.blank/reg.total)*100).toFixed(1) + "%)"],
+          ["D–R registration ratio", (reg.rep>0 ? (reg.dem/reg.rep).toFixed(2)+" : 1" : "—")],
+          ["Total registered voters", fmtNum(reg.total)]
+        ],
+        note: "This is voter REGISTRATION, not the county legislature's actual seats — there's no single current, reliably-updated public source covering all 62 county legislatures' party composition, so this app uses registration as the closest available real proxy for local political lean. The political-support gauge above is adjusted using this county's actual Democratic/Republican/Conservative registration shares, not a flat national assumption."
+      },
+      {
+        title: "Real NY taxes & write-offs on this purchase",
+        rows: [
+          ["Mortgage recording tax rate", mrtLabel],
+          ["Mortgage recording tax cost", fmtUSDPrecise(mrtCost)],
+          ["Annual property tax (before STAR)", fmtUSDPrecise(annualPropertyTax)],
+          ["Basic STAR exemption savings/yr", "−" + fmtUSDPrecise(starSavings)],
+          ["Annual property tax (after STAR)", fmtUSDPrecise(propertyTaxAfterStar)],
+          ["Est. 1st-year mortgage interest", fmtUSDPrecise(firstYearInterest)],
+          ["Est. tax savings if itemizing (30%)", fmtUSDPrecise(itemizedSavings)]
+        ],
+        note: "Mortgage recording tax shown is the typical buyer-side effective rate after the lender-paid 0.25% special additional tax on qualifying 1-6 family residential loans. STAR savings use the statewide Basic STAR average; actual savings vary by school district. Mortgage interest deduction only helps if you itemize — most filers now take the standard deduction post-2017 tax law, so treat this as a ceiling, not a guarantee."
+      },
+      {
+        title: "Other NY homebuyer programs you can stack on top",
+        rows: [
+          ["SONYMA DPAL (statewide)", "Up to $15,000, 0% interest, forgiven after 10 years"],
+          ["SONYMA DPAL PLUS (low-income, limited funds)", "Up to $30,000, household income ≤60% of Area Median Income"],
+          [isNYC ? "NYC HomeFirst (this county)" : "NYC HomeFirst", isNYC ? "Up to $100,000 — only available in the 5 NYC boroughs" : "Not available outside NYC's 5 boroughs"],
+          ["Federal Home Loan Bank of NY Homebuyer Dream Program", "Up to $30,000 grant, income ≤80% AMI"]
+        ],
+        note: "These are real, current New York State and NYC programs (SONYMA / HCR, NYC HPD, FHLBNY) that a recipient could potentially combine with the county program modeled above, subject to each program's own income limits and lender requirements."
+      }
+  ];
+
+  if (name === "Westchester"){
+    extraPanels.push({
+      title: "Westchester County Board of Legislators — by district (Feb 20, 2026)",
+      rows: WESTCHESTER_DISTRICTS.map(dist => [
+        `District ${dist.d}`,
+        `D ${fmtNum(dist.dem)} · R ${fmtNum(dist.rep)} · C ${fmtNum(dist.con)}  (${(dist.dem/Math.max(1,dist.rep)).toFixed(1)}:1 D–R)`
+      ]),
+      note: "Westchester's 17 County Legislative Districts map 1:1 to its 17-member Board of Legislators, making this the closest real proxy available for district-by-district political lean — rather than just the county-wide average shown above. Source: Westchester County Board of Elections, \"2026 County Legislative Districts Active Enrollment,\" dated February 20, 2026. This is active-voter enrollment, not officeholders or actual votes cast — district lean is not a guarantee of how any individual legislator votes on a specific proposal."
+    });
+  }
+
+  renderLedger('ledgerC', {
+    title: `${name} County — Down Payment Assistance Program`,
+    geoTag: region + " · POP " + pop.toLocaleString(),
+    cost: countyShare, rev: countyShare*0.03,
+    costNote: `This county's per-capita share of the ${fmtUSD(statewidePool)} statewide pool.`,
+    revNote: "Modest transfer/recording-tax feedback from enabled purchases.",
+    stats: stats.concat([
+      ["Families reachable", fmtNum(recipients), "This county's share of the pool divided by the assistance amount per recipient you've selected."],
+      ["Assistance per recipient", fmtUSD(perRecipient), "The down-payment assistance amount you've selected for this scenario."],
+      ["Effective property tax rate", effTaxRate.toFixed(2)+"%", "This county's effective property tax rate as a share of home value, from Census ACS-derived data."]
+    ]),
+    priors: localPriors, difficulty: 0.2, pop,
+    partisan: MECH_PARTISAN.cash,
+    fundingNote: FUNDING_SOURCES.reallocated.note(countyShare),
+    meta: {
+      cost: {level:"Medium", reason:"The county's share is exact arithmetic; whether it's actually disbursed this way depends on real budget/legislative decisions not modeled here."},
+      rev: {level:"Low", reason:"Transfer-tax feedback is a small modeled side effect, not directly observed for this county."},
+      sources: ["Census / ACS","HUD"],
+      assumptions: [
+        {name:"County population", value: fmtNum(pop), source:"NY Counties by Population (2026)", confidence:"High"},
+        {name:"Median home value", value: fmtUSD(medianHome), source:"NYS Dept. of Tax & Finance / Zillow ZHVI", confidence:"High"},
+        {name:"Effective property tax rate", value: effTaxRate.toFixed(2)+"%", source:"PropertyTaxByState.com (Census ACS-derived)", confidence:"High"},
+        {name:"Statewide pool distributed", value: fmtUSD(statewidePool), source:"User-chosen scenario input", confidence:"High"},
+        {name:"Assistance per recipient", value: fmtUSD(perRecipient), source:"User-chosen, comparable to SONYMA DPAL", confidence:"High"},
+        {name:"Allocation rule", value:"Population-proportional", source:"Simplifying assumption — not an official NYS allocation formula", confidence:"Low"}
+      ]
+    },
+    extraPanels: extraPanels
+  });
+}
+
+nyCountySelect.value = "New York";
+nyCountySelect.addEventListener('change', renderC);
+nyPoolSelect.addEventListener('change', renderC);
+nyAssistSelect.addEventListener('change', renderC);
+nyMortgageRateSelect.addEventListener('change', renderC);
+renderC();
+
+</script>
+</body>
+</html>
